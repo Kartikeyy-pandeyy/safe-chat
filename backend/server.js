@@ -28,8 +28,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS configuration for Netlify frontend
+const cors = require('cors');
+
 app.use(cors({
-  origin: 'https://safechatapp.netlify.app', // Your Netlify domain
+  origin: [
+    'https://safechatapp.netlify.app', // Your Netlify domain
+    'http://localhost:3000',           // Vite default port (if using Vite)
+  ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

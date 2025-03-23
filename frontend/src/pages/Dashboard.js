@@ -14,19 +14,29 @@ const Dashboard = () => {
   const [showCodePopup, setShowCodePopup] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = 'https://safe-chat-7uuh.onrender.com/api';
 
+  // Fetch user's rooms on mount
   useEffect(() => {
     const fetchRooms = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('https://safe-chat-7uuh.onrender.com/api/chatrooms', {
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+        const response = await axios.get(`${API_BASE_URL}/chatrooms`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setRooms(response.data);
+        setRooms(response.data || []); // Ensure array if response is empty
       } catch (err) {
-        if (err.response?.status === 401) navigate('/login');
-        setErrorMessage('Failed to load rooms.');
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        } else {
+          setErrorMessage(err.response?.data?.message || 'Failed to load rooms.');
+        }
       } finally {
         setLoading(false);
       }
@@ -50,12 +60,13 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'https://safe-chat-7uuh.onrender.com/api/chatrooms/create',
+        `${API_BASE_URL}/chatrooms/create`,
         { roomName: roomName || `Room-${Date.now()}` },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setRooms([...rooms, response.data.room]);
-      setRoomCode(response.data.roomCode);
+      const { room, roomCode } = response.data;
+      setRooms([...rooms, room]);
+      setRoomCode(roomCode);
       setShowCodePopup(true);
       setRoomName('');
       setSuccessMessage('Room created successfully!');
@@ -82,15 +93,16 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'https://safe-chat-7uuh.onrender.com/api/chatrooms/join',
+        `${API_BASE_URL}/chatrooms/join`,
         { roomCode: sanitizedCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.data.room.participants.length >= 3) {
+      const { room } = response.data;
+      if (room.participants.length >= 3) {
         setErrorMessage('Room is full (max 3 participants).');
         return;
       }
-      setRooms([...rooms, response.data.room]);
+      setRooms([...rooms, room]);
       setJoinCode('');
       setSuccessMessage('Room joined successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -105,16 +117,16 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
-        'https://safe-chat-7uuh.onrender.com/api/chatrooms/leave',
+      const response = await axios.post(
+        `${API_BASE_URL}/chatrooms/leave`,
         { roomId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRooms(rooms.filter((room) => room._id !== roomId));
-      setSuccessMessage('Left room successfully!');
+      setSuccessMessage(response.data.message || 'Left room successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setErrorMessage('Failed to leave room.');
+      setErrorMessage(err.response?.data?.message || 'Failed to leave room.');
     } finally {
       setLoading(false);
     }
@@ -124,6 +136,13 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-page">
+      <div className="particles">
+        <span className="particle particle-1"></span>
+        <span className="particle particle-2"></span>
+        <span className="particle particle-3"></span>
+        <span className="particle particle-4"></span>
+      </div>
+
       <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>SafeChat</h2>
@@ -146,8 +165,12 @@ const Dashboard = () => {
         </header>
 
         {loading && <div className="loader"></div>}
-        {errorMessage && <p className="error-message">{errorMessage}</p>}
-        {successMessage && <p className="success-message">{successMessage}</p>}
+        {(errorMessage || successMessage) && (
+          <div className="message-container">
+            {errorMessage && <p className="error-message">{errorMessage}</p>}
+            {successMessage && <p className="success-message">{successMessage}</p>}
+          </div>
+        )}
 
         <section className="room-management">
           <div className="room-actions">
@@ -158,6 +181,7 @@ const Dashboard = () => {
                 onChange={(e) => setRoomName(e.target.value)}
                 placeholder="Room Name (optional)"
                 className="input-field"
+                aria-label="Room Name"
               />
               <button className="action-btn create-btn" onClick={handleCreateRoom}>
                 Create Room
@@ -170,6 +194,7 @@ const Dashboard = () => {
                 onChange={(e) => setJoinCode(e.target.value)}
                 placeholder="Enter Room Code"
                 className="input-field"
+                aria-label="Room Code"
                 required
               />
               <button type="submit" className="action-btn join-btn">Join Room</button>
@@ -179,23 +204,40 @@ const Dashboard = () => {
           <h2>Your Talk Rooms ({rooms.length}/5)</h2>
           <p className="room-note">Messages stored for 7 days</p>
           <div className="room-grid">
-            {rooms.map((room) => (
-              <div key={room._id} className="room-card">
-                <div onClick={() => goToChat(room._id)} className="room-info">
-                  <h3>{room.roomName}</h3>
-                  <p>Participants: {room.participants.length}/3</p>
+            {rooms.length > 0 ? (
+              rooms.map((room) => (
+                <div key={room._id} className="room-card" onClick={() => goToChat(room._id)}>
+                  <div className="room-info">
+                    <h3>{room.roomName}</h3>
+                    <p>Participants: {room.participants.length}/3</p>
+                  </div>
+                  <div className="room-actions">
+                    <span className="chat-arrow">➔</span>
+                    <button
+                      className="leave-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLeaveRoom(room._id);
+                      }}
+                    >
+                      Leave
+                    </button>
+                  </div>
                 </div>
-                <button
-                  className="leave-btn"
-                  onClick={() => handleLeaveRoom(room._id)}
-                >
-                  Leave
-                </button>
+              ))
+            ) : (
+              <div className="no-rooms-card">
+                <p>No rooms yet. Create or join one!</p>
               </div>
-            ))}
-            {rooms.length === 0 && <p className="no-rooms">No rooms yet. Create or join one!</p>}
+            )}
           </div>
         </section>
+      </div>
+
+      <div className="bottom-nav">
+        <button className="nav-btn" onClick={() => navigate('/dashboard')}>🏠</button>
+        <button className="nav-btn" onClick={() => navigate('/profile')}>👤</button>
+        <button className="nav-btn" onClick={handleLogout}>🚪</button>
       </div>
 
       {showCodePopup && (
