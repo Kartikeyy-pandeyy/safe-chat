@@ -14,7 +14,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        { <Route path="/chatroom/:id" element={<ChatRoom />} /> }
+        { <Route path="/chat/:roomId" element={<ChatRoom />} /> }
         { <Route path="/profile" element={<Profile />} /> }
         {/* <Route path="/create-room" element={<CreateRoom />} /> */}
         <Route path="/" element={<Login />} />
