@@ -4,178 +4,218 @@ import axios from 'axios';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
-  const [username, setUsername] = useState('');
   const [rooms, setRooms] = useState([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [roomName, setRoomName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [showCodePopup, setShowCodePopup] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch user data and rooms on mount
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
+    const fetchRooms = async () => {
+      setLoading(true);
       try {
-        // Fetch user info
-        const userResponse = await axios.get('http://localhost:5000/api/users/me', {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('https://safe-chat-7uuh.onrender.com/api/chatrooms', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUsername(userResponse.data.username);
-
-        // Fetch chat rooms
-        const roomsResponse = await axios.get('http://localhost:5000/api/rooms', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setRooms(roomsResponse.data);
-        setIsLoaded(true);
+        setRooms(response.data);
       } catch (err) {
-        setErrorMessage('Failed to load dashboard data. Please try again.');
-        console.error('Dashboard fetch error:', err);
+        if (err.response?.status === 401) navigate('/login');
+        setErrorMessage('Failed to load rooms.');
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchData();
+    fetchRooms();
   }, [navigate]);
 
-  // Handle logout
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
 
-  // Navigate to chat room
-  const handleJoinRoom = (roomId) => {
-    navigate(`/chatroom/${roomId}`);
+  const handleCreateRoom = async () => {
+    if (rooms.length >= 5) {
+      setErrorMessage('Max 5 rooms allowed.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'https://safe-chat-7uuh.onrender.com/api/chatrooms/create',
+        { roomName: roomName || `Room-${Date.now()}` },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRooms([...rooms, response.data.room]);
+      setRoomCode(response.data.roomCode);
+      setShowCodePopup(true);
+      setRoomName('');
+      setSuccessMessage('Room created successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Failed to create room.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Navigate to profile page
-  const handleProfileRedirect = () => {
-    navigate('/profile');
+  const handleJoinRoom = async (e) => {
+    e.preventDefault();
+    if (rooms.length >= 5) {
+      setErrorMessage('Max 5 rooms allowed.');
+      return;
+    }
+    const sanitizedCode = joinCode.replace(/[^a-zA-Z0-9]/g, '');
+    if (sanitizedCode.length < 5 || sanitizedCode.length > 10) {
+      setErrorMessage('Code must be 5-10 characters.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'https://safe-chat-7uuh.onrender.com/api/chatrooms/join',
+        { roomCode: sanitizedCode },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.room.participants.length >= 3) {
+        setErrorMessage('Room is full (max 3 participants).');
+        return;
+      }
+      setRooms([...rooms, response.data.room]);
+      setJoinCode('');
+      setSuccessMessage('Room joined successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Invalid room code.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Create new room (placeholder for now, could open a modal)
-  const handleCreateRoom = () => {
-    navigate('/create-room'); // Assuming a separate page or modal for room creation
+  const handleLeaveRoom = async (roomId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'https://safe-chat-7uuh.onrender.com/api/chatrooms/leave',
+        { roomId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRooms(rooms.filter((room) => room._id !== roomId));
+      setSuccessMessage('Left room successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrorMessage('Failed to leave room.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const goToChat = (roomId) => navigate(`/chat/${roomId}`);
 
   return (
-    <div className={`dashboard-page ${isLoaded ? 'loaded' : ''}`}>
-      {/* Background Particles */}
-      <div className="particles">
-        <div className="particle particle-1"></div>
-        <div className="particle particle-2"></div>
-        <div className="particle particle-3"></div>
-        <div className="particle particle-4"></div>
+    <div className="dashboard-page">
+      <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <h2>SafeChat</h2>
+          <button className="close-btn" onClick={toggleSidebar}>×</button>
+        </div>
+        <nav>
+          <button className="nav-btn" onClick={() => navigate('/dashboard')}>Dashboard</button>
+          <button className="nav-btn" onClick={() => navigate('/profile')}>Profile</button>
+          <button className="nav-btn" onClick={handleLogout}>Logout</button>
+        </nav>
       </div>
 
-      {/* Header */}
-      <header className="dashboard-header">
-        <h1 className="brand-title">SafeChat</h1>
-        <div className="user-controls">
-          <span className="user-greeting">Welcome, {username || 'User'}!</span>
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="dashboard-wrapper">
-        {/* Sidebar Navigation */}
-        <nav className="dashboard-nav">
-          <ul className="nav-list">
-            <li className="nav-item active">Dashboard</li>
-            <li className="nav-item" onClick={() => navigate('/chatrooms')}>
-              Chat Rooms
-            </li>
-            <li className="nav-item" onClick={handleProfileRedirect}>
-              Profile
-            </li>
-          </ul>
-        </nav>
-
-        {/* Main Dashboard Content */}
-        <main className="dashboard-main">
-          {errorMessage && <p className="error-message">{errorMessage}</p>}
-
-          {/* Security Status */}
-          <div className="security-status">
-            <span className="security-icon">🔒</span>
-            <p className="security-text">All Rooms End-to-End Encrypted</p>
+      <div className="main-content">
+        <header>
+          <button className="menu-btn" onClick={toggleSidebar}>☰</button>
+          <h1>Dashboard</h1>
+          <div className="user-info">
+            <span>{localStorage.getItem('username') || 'User'}</span>
           </div>
+        </header>
 
-          {/* Active Chat Rooms */}
-          <section className="rooms-section">
-            <div className="section-header">
-              <h2 className="section-title">Active Chat Rooms</h2>
-              <button className="create-room-btn" onClick={handleCreateRoom}>
-                Start New Chat
+        {loading && <div className="loader"></div>}
+        {errorMessage && <p className="error-message">{errorMessage}</p>}
+        {successMessage && <p className="success-message">{successMessage}</p>}
+
+        <section className="room-management">
+          <div className="room-actions">
+            <div className="create-form">
+              <input
+                type="text"
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                placeholder="Room Name (optional)"
+                className="input-field"
+              />
+              <button className="action-btn create-btn" onClick={handleCreateRoom}>
+                Create Room
               </button>
             </div>
-            <div className="rooms-grid">
-              {rooms.length > 0 ? (
-                rooms.map((room) => (
-                  <div key={room.id} className="room-card">
-                    <h3 className="room-name">{room.name || `Room #${room.id}`}</h3>
-                    <p className="room-participants">
-                      Participants: {room.participants.join(', ')}
-                    </p>
-                    <p className="room-last-message">
-                      Last: {room.lastMessage || 'No messages yet'}
-                    </p>
-                    <p className="room-expiry">
-                      Expires in {room.daysUntilExpiry || 7} days
-                    </p>
-                    <button
-                      className="join-room-btn"
-                      onClick={() => handleJoinRoom(room.id)}
-                    >
-                      Join Room
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="no-rooms-text">No active rooms yet. Create one!</p>
-              )}
-            </div>
-          </section>
+            <form className="join-form" onSubmit={handleJoinRoom}>
+              <input
+                type="text"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+                placeholder="Enter Room Code"
+                className="input-field"
+                required
+              />
+              <button type="submit" className="action-btn join-btn">Join Room</button>
+            </form>
+          </div>
 
-          {/* Recent Activity */}
-          <section className="activity-section">
-            <h2 className="section-title">Recent Activity</h2>
-            <div className="activity-list">
-              {rooms.length > 0 ? (
-                rooms.slice(0, 3).map((room) => (
-                  <div key={room.id} className="activity-item">
-                    <p className="activity-text">
-                      {room.lastMessage
-                        ? `${room.participants[1] || 'Someone'} sent a message in ${
-                            room.name || `Room #${room.id}`
-                          }`
-                        : `No recent activity in ${room.name || `Room #${room.id}`}`}
-                    </p>
-                    <span className="activity-timestamp">
-                      {room.lastMessageTime || 'N/A'}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="no-activity-text">No recent activity.</p>
-              )}
-            </div>
-          </section>
-        </main>
+          <h2>Your Talk Rooms ({rooms.length}/5)</h2>
+          <p className="room-note">Messages stored for 7 days</p>
+          <div className="room-grid">
+            {rooms.map((room) => (
+              <div key={room._id} className="room-card">
+                <div onClick={() => goToChat(room._id)} className="room-info">
+                  <h3>{room.roomName}</h3>
+                  <p>Participants: {room.participants.length}/3</p>
+                </div>
+                <button
+                  className="leave-btn"
+                  onClick={() => handleLeaveRoom(room._id)}
+                >
+                  Leave
+                </button>
+              </div>
+            ))}
+            {rooms.length === 0 && <p className="no-rooms">No rooms yet. Create or join one!</p>}
+          </div>
+        </section>
       </div>
 
-      {/* Footer */}
-      <footer className="dashboard-footer">
-        <p className="footer-text">Built for the future. Secured for today.</p>
-        <p className="version-text">v1.0</p>
-      </footer>
+      {showCodePopup && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <h3>Room Created!</h3>
+            <p>Share this code:</p>
+            <div className="code-display">{roomCode}</div>
+            <button
+              className="action-btn"
+              onClick={() => {
+                navigator.clipboard.writeText(roomCode);
+                setShowCodePopup(false);
+              }}
+            >
+              Copy & Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
