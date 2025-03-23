@@ -9,7 +9,7 @@ const chatRoomSchema = mongoose.Schema(
       {
         sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         content: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now, expires: 604800 }, // 7 days in seconds
+        timestamp: { type: Date, default: Date.now, expires: 604800 }, // 7 days in seconds, TTL index created here
       },
     ],
     createdAt: { type: Date, default: Date.now },
@@ -17,8 +17,8 @@ const chatRoomSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure TTL index is created
-chatRoomSchema.index({ 'messages.timestamp': 1 }, { expireAfterSeconds: 604800 });
+// Removed the duplicate TTL index definition
+// chatRoomSchema.index({ 'messages.timestamp': 1 }, { expireAfterSeconds: 604800 });
 
 const ChatRoom = mongoose.model('ChatRoom', chatRoomSchema);
 module.exports = ChatRoom;
