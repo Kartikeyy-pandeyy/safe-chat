@@ -33,6 +33,9 @@ const ChatRoom = () => {
     // Connect to WebSocket
     socketRef.current = io(SOCKET_URL, {
       auth: { token: `Bearer ${token}` },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     // Join the room
@@ -46,14 +49,25 @@ const ChatRoom = () => {
     // Handle WebSocket errors
     socketRef.current.on('connect_error', (err) => {
       console.error('WebSocket connection error:', err.message);
-      setErrorMessage('Failed to connect to chat server.');
+      setErrorMessage('Failed to connect to chat server. Please try again.');
+    });
+
+    // Handle custom error events from the server
+    socketRef.current.on('error', (error) => {
+      console.error('WebSocket server error:', error);
+      setErrorMessage(error);
+      if (error.includes('Authentication error')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        navigate('/login');
+      }
     });
 
     // Cleanup on unmount
     return () => {
       socketRef.current.disconnect();
     };
-  }, [roomId, navigate, token]); // Add token as a dependency
+  }, [roomId, navigate, token]);
 
   // Fetch initial room data
   useEffect(() => {
@@ -99,7 +113,7 @@ const ChatRoom = () => {
     };
 
     fetchRoomData();
-  }, [roomId, navigate, token]); // Add token as a dependency
+  }, [roomId, navigate, token]);
 
   // Scroll to the latest message
   useEffect(() => {
@@ -121,7 +135,6 @@ const ChatRoom = () => {
       // Emit the message via WebSocket
       socketRef.current.emit('sendMessage', messageData);
 
-      // Optimistic update (optional, since WebSocket will broadcast the message)
       setNewMessage('');
       setSuccessMessage('Message sent!');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -145,6 +158,10 @@ const ChatRoom = () => {
         { roomId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Emit leaveRoom event via WebSocket
+      socketRef.current.emit('leaveRoom', roomId);
+
       setSuccessMessage('Left room successfully!');
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
@@ -162,6 +179,11 @@ const ChatRoom = () => {
     navigate('/login');
   };
 
+  const dismissMessages = () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
   return (
     <div className="chatroom-page">
       <div className="particles">
@@ -174,7 +196,11 @@ const ChatRoom = () => {
       <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>SafeChat</h2>
-          <button className="close-btn" onClick={toggleSidebar}>
+          <button
+            className="close-btn"
+            onClick={toggleSidebar}
+            aria-label="Close sidebar"
+          >
             ×
           </button>
         </div>
@@ -232,6 +258,13 @@ const ChatRoom = () => {
             {successMessage && (
               <p className="success-message">{successMessage}</p>
             )}
+            <button
+              className="dismiss-btn"
+              onClick={dismissMessages}
+              aria-label="Dismiss messages"
+            >
+              ×
+            </button>
           </div>
         )}
 
@@ -239,18 +272,20 @@ const ChatRoom = () => {
           {messages.length > 0 ? (
             messages.map((msg, index) => (
               <div
-                key={index}
+                key={msg._id || index} // Use _id if available, otherwise fallback to index
                 className={`message ${
                   msg.sender._id === localStorage.getItem('userId')
                     ? 'sent'
                     : 'received'
                 }`}
               >
-                <span className="sender">{msg.sender.username}</span>
+                <div className="message-header">
+                  <span className="sender">{msg.sender.username}</span>
+                  <span className="timestamp">
+                    {new Date(msg.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
                 <p className="content">{msg.content}</p>
-                <span className="timestamp">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </span>
               </div>
             ))
           ) : (
@@ -278,6 +313,30 @@ const ChatRoom = () => {
             {loading ? 'Sending...' : 'Send'}
           </button>
         </form>
+      </div>
+
+      <div className="bottom-nav">
+        <button
+          className="nav-btn"
+          onClick={() => navigate('/dashboard')}
+          aria-label="Go to Dashboard"
+        >
+          🏠
+        </button>
+        <button
+          className="nav-btn"
+          onClick={() => navigate('/profile')}
+          aria-label="Go to Profile"
+        >
+          👤
+        </button>
+        <button
+          className="nav-btn"
+          onClick={handleLogout}
+          aria-label="Logout"
+        >
+          🚪
+        </button>
       </div>
     </div>
   );
