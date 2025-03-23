@@ -1,9 +1,11 @@
 const { RekognitionClient } = require('@aws-sdk/client-rekognition');
-const { fromIni } = require('@aws-sdk/credential-providers');
 
 const rekognition = new RekognitionClient({
-  region: 'us-east-1',
-  credentials: fromIni({ profile: 'default' }), // Use CLI credentials
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 module.exports = rekognition;
