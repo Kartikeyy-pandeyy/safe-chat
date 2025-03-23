@@ -11,33 +11,29 @@ const Signup = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPopup, setShowPopup] = useState(false);
-  const [countdown, setCountdown] = useState(3); // Countdown starts at 3 seconds
+  const [countdown, setCountdown] = useState(3);
   const navigate = useNavigate();
 
-  // Trigger animations on component mount
   useEffect(() => {
     setIsLoaded(true);
   }, []);
 
-  // Handle countdown and redirect after popup
   useEffect(() => {
     if (showPopup) {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            navigate('/login'); // Redirect to login when countdown reaches 0
+            navigate('/login');
             return 0;
           }
           return prev - 1;
         });
-      }, 1000); // Update every second
-
-      return () => clearInterval(timer); // Cleanup on unmount or when popup closes
+      }, 1000);
+      return () => clearInterval(timer);
     }
   }, [showPopup, navigate]);
 
-  // Handle face capture using WebRTC
   const handleCapture = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -54,9 +50,9 @@ const Signup = () => {
         context.drawImage(video, 0, 0, 640, 480);
         canvas.toBlob((blob) => {
           setImage(blob);
-          setErrorMessage(''); // Clear any previous errors
-          console.log('Captured image Blob:', blob); // Debug the captured image
-        }, 'image/jpeg'); // Explicitly set to JPEG format
+          setErrorMessage('');
+          console.log('Captured image Blob:', blob);
+        }, 'image/jpeg');
         stream.getTracks().forEach((track) => track.stop());
       }, 2000);
     } catch (err) {
@@ -65,10 +61,9 @@ const Signup = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage(''); // Reset error message
+    setErrorMessage('');
 
     if (!image) {
       setErrorMessage('Please capture your face to sign up.');
@@ -79,39 +74,34 @@ const Signup = () => {
     formData.append('email', email);
     formData.append('username', username);
     formData.append('password', password);
-    formData.append('image', image, 'face.jpg'); // Add filename for clarity
+    formData.append('image', image, 'face.jpg');
 
-    // Log FormData contents for debugging (note: FormData logging is tricky, use this workaround)
     for (let [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }
 
     try {
       const response = await axios.post('https://safe-chat-7uuh.onrender.com/api/users/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       localStorage.setItem('token', response.data.token);
-      setShowPopup(true); // Show popup on successful signup
+      setShowPopup(true);
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Signup failed. Please try again.';
       setErrorMessage(errorMsg);
       console.error('Signup error:', err);
       if (err.response) {
-        console.error('Server response:', err.response.data); // Log detailed server response
+        console.error('Server response:', err.response.data);
       }
     }
   };
 
-  // Navigate back to login page
   const handleLoginRedirect = () => {
     navigate('/login');
   };
 
   return (
     <div className={`signup-page ${isLoaded ? 'loaded' : ''}`}>
-      {/* Background Particles */}
       <div className="particles">
         <div className="particle particle-1"></div>
         <div className="particle particle-2"></div>
@@ -119,7 +109,6 @@ const Signup = () => {
         <div className="particle particle-4"></div>
       </div>
 
-      {/* Main Content */}
       <div className="signup-wrapper">
         <h1 className="brand-title">SafeChat</h1>
         <div className="signup-box">
@@ -127,9 +116,7 @@ const Signup = () => {
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="input-group">
-              <label htmlFor="email" className="input-label">
-                Email Address
-              </label>
+              <label htmlFor="email" className="input-label">Email Address</label>
               <input
                 id="email"
                 type="email"
@@ -143,9 +130,7 @@ const Signup = () => {
             </div>
 
             <div className="input-group">
-              <label htmlFor="username" className="input-label">
-                Username
-              </label>
+              <label htmlFor="username" className="input-label">Username</label>
               <input
                 id="username"
                 type="text"
@@ -159,9 +144,7 @@ const Signup = () => {
             </div>
 
             <div className="input-group">
-              <label htmlFor="password" className="input-label">
-                Password
-              </label>
+              <label htmlFor="password" className="input-label">Password</label>
               <input
                 id="password"
                 type="password"
@@ -178,7 +161,7 @@ const Signup = () => {
               <button
                 type="button"
                 onClick={handleCapture}
-                className="action-btn face-btn"
+                className="signup-action-btn signup-face-btn" // Renamed
               >
                 {image ? (
                   <span className="success-text">Face Captured ✓</span>
@@ -188,7 +171,7 @@ const Signup = () => {
               </button>
             </div>
 
-            <button type="submit" className="action-btn submit-btn">
+            <button type="submit" className="signup-action-btn signup-submit-btn"> {/* Renamed */}
               Sign Up
             </button>
 
@@ -204,7 +187,6 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Popup */}
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -216,7 +198,6 @@ const Signup = () => {
         </div>
       )}
 
-      {/* Footer Note */}
       <div className="footer-note">
         <p>Built for the future. Secured for today.</p>
       </div>

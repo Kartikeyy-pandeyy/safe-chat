@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // For navigation to signup
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import NoticePopup from '../components/NoticePopup'; // Import the new component
 import '../styles/Login.css';
 
 const Login = () => {
@@ -9,15 +10,21 @@ const Login = () => {
   const [image, setImage] = useState(null);
   const [useFaceLogin, setUseFaceLogin] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // For error handling
-  const navigate = useNavigate(); // Hook for navigation
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showPopup, setShowPopup] = useState(false); // State for popup visibility
+  const navigate = useNavigate();
 
-  // Trigger animations on component mount
+  // Trigger animations and popup delay on component mount
   useEffect(() => {
     setIsLoaded(true);
+    // Show popup after 1 second
+    const popupTimer = setTimeout(() => {
+      setShowPopup(true);
+    }, 1000);
+    // Cleanup timeout if component unmounts
+    return () => clearTimeout(popupTimer);
   }, []);
 
-  // Handle face capture using WebRTC
   const handleCapture = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -34,7 +41,7 @@ const Login = () => {
         context.drawImage(video, 0, 0, 640, 480);
         canvas.toBlob((blob) => {
           setImage(blob);
-          setErrorMessage(''); // Clear any previous errors
+          setErrorMessage('');
         });
         stream.getTracks().forEach((track) => track.stop());
       }, 2000);
@@ -44,10 +51,9 @@ const Login = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage(''); // Reset error message
+    setErrorMessage('');
 
     const formData = new FormData();
     formData.append('email', email);
@@ -68,9 +74,7 @@ const Login = () => {
 
     try {
       const response = await axios.post('https://safe-chat-7uuh.onrender.com/api/users/login', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       localStorage.setItem('token', response.data.token);
       navigate('/dashboard');
@@ -81,14 +85,12 @@ const Login = () => {
     }
   };
 
-  // Navigate to signup page
   const handleSignupRedirect = () => {
     navigate('/signup');
   };
 
   return (
     <div className={`login-page ${isLoaded ? 'loaded' : ''}`}>
-      {/* Background Particles */}
       <div className="particles">
         <div className="particle particle-1"></div>
         <div className="particle particle-2"></div>
@@ -96,9 +98,7 @@ const Login = () => {
         <div className="particle particle-4"></div>
       </div>
 
-      {/* Main Content Wrapper */}
       <div className="login-wrapper">
-        {/* Left Section: Branding and Features */}
         <div className="intro-section">
           <h1 className="brand-title">SafeChat</h1>
           <p className="brand-tagline">Where Privacy Meets Innovation</p>
@@ -126,16 +126,13 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Section: Login Form */}
         <div className="login-section">
           <div className="login-box">
             <h2 className="login-title">Access Your Sanctuary</h2>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             <form onSubmit={handleSubmit} className="login-form">
               <div className="input-group">
-                <label htmlFor="email" className="input-label">
-                  Email Address
-                </label>
+                <label htmlFor="email" className="input-label">Email Address</label>
                 <input
                   id="email"
                   type="email"
@@ -153,7 +150,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={handleCapture}
-                    className="action-btn face-btn"
+                    className="login-action-btn login-face-btn"
                   >
                     {image ? (
                       <span className="success-text">Face Captured ✓</span>
@@ -164,9 +161,7 @@ const Login = () => {
                 </div>
               ) : (
                 <div className="input-group">
-                  <label htmlFor="password" className="input-label">
-                    Password
-                  </label>
+                  <label htmlFor="password" className="input-label">Password</label>
                   <input
                     id="password"
                     type="password"
@@ -180,7 +175,7 @@ const Login = () => {
                 </div>
               )}
 
-              <button type="submit" className="action-btn submit-btn">
+              <button type="submit" className="login-action-btn login-submit-btn">
                 {useFaceLogin ? 'Enter with Face' : 'Enter with Password'}
               </button>
 
@@ -195,14 +190,10 @@ const Login = () => {
                 </span>
               </div>
 
-              {/* Signup Link */}
               <div className="signup-container">
                 <span className="signup-text">
                   New to SafeChat?{' '}
-                  <span
-                    className="signup-link"
-                    onClick={handleSignupRedirect}
-                  >
+                  <span className="signup-link" onClick={handleSignupRedirect}>
                     Create new account
                   </span>
                 </span>
@@ -212,7 +203,9 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Footer Note */}
+      {/* Add the NoticePopup component */}
+      {showPopup && <NoticePopup onClose={() => setShowPopup(false)} />}
+
       <div className="footer-note">
         <p>Built for the future. Secured for today.</p>
       </div>

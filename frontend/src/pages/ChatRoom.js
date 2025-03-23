@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import io from 'socket.io-client';
 import '../styles/ChatRoom.css';
+import EmojiPicker from 'emoji-picker-react';
 
 const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
@@ -10,27 +11,29 @@ const ChatRoom = () => {
   const [roomName, setRoomName] = useState('');
   const [participants, setParticipants] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { roomId } = useParams();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const socketRef = useRef(null);
   const API_BASE_URL = 'https://safe-chat-7uuh.onrender.com/api';
   const SOCKET_URL = 'https://safe-chat-7uuh.onrender.com';
 
-  // Retrieve token once at the top of the component
   const token = localStorage.getItem('token');
+  const username = localStorage.getItem('username') || 'Unknown';
 
-  // Initialize WebSocket connection
   useEffect(() => {
     if (!token || !roomId) {
       navigate('/login');
       return;
     }
 
-    // Connect to WebSocket
     socketRef.current = io(SOCKET_URL, {
       auth: { token: `Bearer ${token}` },
       reconnection: true,
@@ -38,106 +41,77 @@ const ChatRoom = () => {
       reconnectionDelay: 1000,
     });
 
-    // Join the room
     socketRef.current.emit('joinRoom', roomId);
 
-    // Listen for new messages
-    socketRef.current.on('newMessage', (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+    socketRef.current.on('newMessage', (message) => setMessages((prev) => [...prev, message]));
+    socketRef.current.on('typing', ({ userId, username }) => {
+      if (userId !== localStorage.getItem('userId')) {
+        setTypingUsers((prev) => [...new Set([...prev, username])]);
+        setTimeout(() => setTypingUsers((prev) => prev.filter((u) => u !== username)), 2000);
+      }
     });
-
-    // Handle WebSocket errors
-    socketRef.current.on('connect_error', (err) => {
-      console.error('WebSocket connection error:', err.message);
-      setErrorMessage('Failed to connect to chat server. Please try again.');
-    });
-
-    // Handle custom error events from the server
+    socketRef.current.on('connect_error', () => setErrorMessage('Connection failed.'));
+    socketRef.current.on('disconnect', () => setErrorMessage('Disconnected. Reconnecting...'));
+    socketRef.current.on('reconnect', () => setErrorMessage(''));
     socketRef.current.on('error', (error) => {
-      console.error('WebSocket server error:', error);
       setErrorMessage(error);
       if (error.includes('Authentication error')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
+        localStorage.clear();
         navigate('/login');
       }
     });
 
-    // Cleanup on unmount
-    return () => {
-      socketRef.current.disconnect();
-    };
+    return () => socketRef.current.disconnect();
   }, [roomId, navigate, token]);
 
-  // Fetch initial room data
   useEffect(() => {
     const fetchRoomData = async () => {
-      if (!token || !roomId) {
-        navigate('/login');
-        return;
-      }
-
+      if (!token || !roomId) return;
       setLoading(true);
       try {
-        // Fetch messages
-        const messagesResponse = await axios.get(
-          `${API_BASE_URL}/chatrooms/${roomId}/messages`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const [messagesResponse, roomResponse] = await Promise.all([
+          axios.get(`${API_BASE_URL}/chatrooms/${roomId}/messages`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_BASE_URL}/chatrooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
         setMessages(messagesResponse.data);
-
-        // Fetch room details
-        const roomResponse = await axios.get(
-          `${API_BASE_URL}/chatrooms/${roomId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
         setRoomName(roomResponse.data.roomName);
         setParticipants(roomResponse.data.participants);
       } catch (err) {
         if (err.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('username');
+          localStorage.clear();
           navigate('/login');
         } else {
-          setErrorMessage(
-            err.response?.data?.message || 'Failed to load chat room.'
-          );
+          setErrorMessage(err.response?.data?.message || 'Failed to load room.');
         }
       } finally {
         setLoading(false);
       }
     };
-
     fetchRoomData();
   }, [roomId, navigate, token]);
 
-  // Scroll to the latest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
+
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    socketRef.current.emit('typing', { roomId, userId: localStorage.getItem('userId'), username });
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !roomId || !token) return;
-
     setLoading(true);
     try {
-      const sender = {
-        _id: localStorage.getItem('userId') || '',
-        username: localStorage.getItem('username') || 'Unknown',
-      };
+      const sender = { _id: localStorage.getItem('userId'), username };
       const messageData = { roomId, content: newMessage, sender };
-
-      // Emit the message via WebSocket
       socketRef.current.emit('sendMessage', messageData);
-
       setNewMessage('');
+      setShowEmojiPicker(false);
       setSuccessMessage('Message sent!');
       setTimeout(() => setSuccessMessage(''), 3000);
+      inputRef.current?.focus();
     } catch (err) {
       setErrorMessage('Failed to send message.');
     } finally {
@@ -146,22 +120,11 @@ const ChatRoom = () => {
   };
 
   const handleLeaveRoom = async () => {
-    if (!roomId || !token) {
-      navigate('/login');
-      return;
-    }
-
+    if (!roomId || !token) return;
     setLoading(true);
     try {
-      await axios.post(
-        `${API_BASE_URL}/chatrooms/leave`,
-        { roomId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Emit leaveRoom event via WebSocket
+      await axios.post(`${API_BASE_URL}/chatrooms/leave`, { roomId }, { headers: { Authorization: `Bearer ${token}` } });
       socketRef.current.emit('leaveRoom', roomId);
-
       setSuccessMessage('Left room successfully!');
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
@@ -172,174 +135,134 @@ const ChatRoom = () => {
   };
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
+  const toggleParticipants = () => setParticipantsOpen(!participantsOpen);
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
+    localStorage.clear();
     navigate('/login');
   };
-
   const dismissMessages = () => {
     setErrorMessage('');
     setSuccessMessage('');
   };
 
   return (
-    <div className="chatroom-page">
-      <div className="particles">
-        <span className="particle particle-1"></span>
-        <span className="particle particle-2"></span>
-        <span className="particle particle-3"></span>
-        <span className="particle particle-4"></span>
-      </div>
-
+    <div className="chatroom">
       <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>SafeChat</h2>
-          <button
-            className="close-btn"
-            onClick={toggleSidebar}
-            aria-label="Close sidebar"
-          >
-            ×
+          <button className="close-btn" onClick={toggleSidebar} aria-label="Close sidebar">
+            ✕
           </button>
         </div>
         <nav>
-          <button
-            className="nav-btn"
-            onClick={() => navigate('/dashboard')}
-            aria-label="Go to Dashboard"
-          >
+          <button className="nav-btn" onClick={() => navigate('/dashboard')} aria-label="Go to Dashboard">
             Dashboard
           </button>
-          <button
-            className="nav-btn"
-            onClick={() => navigate('/profile')}
-            aria-label="Go to Profile"
-          >
+          <button className="nav-btn" onClick={() => navigate('/profile')} aria-label="Go to Profile">
             Profile
           </button>
-          <button
-            className="nav-btn"
-            onClick={handleLogout}
-            aria-label="Logout"
-          >
+          <button className="nav-btn" onClick={handleLogout} aria-label="Logout">
             Logout
           </button>
         </nav>
       </div>
 
-      <div className="main-content">
-        <header>
-          <button
-            className="menu-btn"
-            onClick={toggleSidebar}
-            aria-label="Toggle sidebar"
-          >
-            ☰
-          </button>
+      <div className="chat-container">
+        <div className="chatheader">
+          <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar">☰</button>
           <h1>{roomName || 'Chat Room'}</h1>
-          <div className="room-info">
-            <span>Participants: {participants.length}/3</span>
-            <button
-              className="leave-btn"
-              onClick={handleLeaveRoom}
-              aria-label="Leave room"
-            >
-              Leave
-            </button>
+          <div className="room-actions">
+            <button onClick={handleLeaveRoom} aria-label="Leave room">Leave</button>
           </div>
-        </header>
+        </div>
 
         {loading && <div className="loader"></div>}
         {(errorMessage || successMessage) && (
-          <div className="message-container">
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
-            {successMessage && (
-              <p className="success-message">{successMessage}</p>
-            )}
-            <button
-              className="dismiss-btn"
-              onClick={dismissMessages}
-              aria-label="Dismiss messages"
-            >
-              ×
-            </button>
+          <div className="alert">
+            {errorMessage && <p className="error">{errorMessage}</p>}
+            {successMessage && <p className="success">{successMessage}</p>}
+            <button onClick={dismissMessages} aria-label="Dismiss">✕</button>
           </div>
         )}
 
-        <div className="messages-container">
+        <div className="participants" data-open={participantsOpen}>
+          <div className="participants-header">
+            <h3>Participants ({participants.length}/3)</h3>
+            <button onClick={toggleParticipants} aria-label="Toggle participants">👥</button>
+          </div>
+          <ul>
+            {participants.map((p, i) => (
+              <li key={i}>
+                <span className="status" data-online={i % 2 === 0}></span>
+                {p.username}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="messages">
           {messages.length > 0 ? (
-            messages.map((msg, index) => (
+            messages.map((msg, i) => (
               <div
-                key={msg._id || index} // Use _id if available, otherwise fallback to index
-                className={`message ${
-                  msg.sender._id === localStorage.getItem('userId')
-                    ? 'sent'
-                    : 'received'
-                }`}
+                key={msg._id || i}
+                className={`message ${msg.sender._id === localStorage.getItem('userId') ? 'sent' : 'received'}`}
               >
-                <div className="message-header">
-                  <span className="sender">{msg.sender.username}</span>
-                  <span className="timestamp">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
+                <span className="avatar">{msg.sender.username[0]}</span>
+                <div className="message-body">
+                  <div className="message-meta">
+                    <span className="sender">{msg.sender.username}</span>
+                    <span className="time">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                  <p>{msg.content}</p>
                 </div>
-                <p className="content">{msg.content}</p>
               </div>
             ))
           ) : (
-            <p className="no-messages">No messages yet. Start chatting!</p>
+            <p className="no-messages">No messages yet. Say hi!</p>
+          )}
+          {typingUsers.length > 0 && (
+            <div className="typing">
+              <span className="dots"><span></span><span></span><span></span></span>
+              {typingUsers.join(', ')} typing...
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSendMessage} className="message-form">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="message-input"
-            aria-label="Message input"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            className="send-btn"
-            disabled={loading}
-            aria-label="Send message"
-          >
-            {loading ? 'Sending...' : 'Send'}
+        <form onSubmit={handleSendMessage} className="input-form">
+          <div className="input-container">
+            <textarea
+              ref={inputRef}
+              value={newMessage}
+              onChange={handleTyping}
+              placeholder="Type a message..."
+              aria-label="Message input"
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              aria-label="Toggle emoji picker"
+            >
+              😊
+            </button>
+            {showEmojiPicker && (
+              <div className="emoji-picker">
+                <EmojiPicker onEmojiClick={(emoji) => setNewMessage((prev) => prev + emoji.emoji)} />
+              </div>
+            )}
+          </div>
+          <button type="submit" disabled={loading} aria-label="Send">
+            {loading ? '...' : 'Send'}
           </button>
         </form>
-      </div>
 
-      <div className="bottom-nav">
-        <button
-          className="nav-btn"
-          onClick={() => navigate('/dashboard')}
-          aria-label="Go to Dashboard"
-        >
-          🏠
-        </button>
-        <button
-          className="nav-btn"
-          onClick={() => navigate('/profile')}
-          aria-label="Go to Profile"
-        >
-          👤
-        </button>
-        <button
-          className="nav-btn"
-          onClick={handleLogout}
-          aria-label="Logout"
-        >
-          🚪
-        </button>
+        <div aria-live="polite" className="sr-only">
+          {messages.length > 0 && `New message from ${messages[messages.length - 1].sender.username}: ${messages[messages.length - 1].content}`}
+        </div>
       </div>
     </div>
   );
 };
 
-export default ChatRoom;
+export default React.memo(ChatRoom);

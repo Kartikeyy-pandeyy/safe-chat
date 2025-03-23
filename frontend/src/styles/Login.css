@@ -109,7 +109,7 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(0, 255, 224, 0.2);
   animation: slideInLeft 1s ease-out;
-  text-align: center; /* Center text for better mobile look */
+  text-align: center;
 }
 
 .brand-title {
@@ -141,7 +141,7 @@ body {
   padding: clamp(1rem, 2vw, 1.5rem);
   border-radius: 15px;
   transition: transform 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
-  text-align: center; /* Center feature text */
+  text-align: center;
 }
 
 .feature-item:hover {
@@ -187,7 +187,7 @@ body {
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(0, 255, 224, 0.2);
   animation: slideInRight 1s ease-out;
-  text-align: center; /* Center text in login box */
+  text-align: center;
 }
 
 .login-title {
@@ -252,7 +252,7 @@ body {
 }
 
 /* Buttons */
-.action-btn {
+.login-action-btn { /* Renamed from .action-btn */
   background: linear-gradient(90deg, #00ffe0 0%, #8a2be2 100%);
   border: none;
   border-radius: 50px;
@@ -265,17 +265,17 @@ body {
   transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
-.action-btn:hover {
+.login-action-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 0 25px rgba(0, 255, 224, 0.6);
   background: linear-gradient(90deg, #00ffe0 20%, #8a2be2 80%);
 }
 
-.face-btn {
+.login-face-btn { /* Renamed from .face-btn */
   background: linear-gradient(90deg, #ff007a 0%, #ff5e62 100%);
 }
 
-.face-btn:hover {
+.login-face-btn:hover {
   background: linear-gradient(90deg, #ff007a 20%, #ff5e62 80%);
 }
 
@@ -358,7 +358,7 @@ body {
   }
 
   .features-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 on top, 2 on bottom */
+    grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, auto);
   }
 }
@@ -411,7 +411,7 @@ body {
   }
 
   .input-field,
-  .action-btn {
+  .login-action-btn { /* Updated from .action-btn */
     padding: clamp(0.6rem, 1.2vw, 0.9rem) clamp(0.8rem, 1.5vw, 1.2rem);
     font-size: clamp(0.8rem, 1.6vw, 0.95rem);
     border-radius: 40px;
@@ -443,7 +443,7 @@ body {
   }
 
   .input-field,
-  .action-btn {
+  .login-action-btn { /* Updated from .action-btn */
     padding: 0.7rem 1rem;
     font-size: 0.9rem;
     border-radius: 35px;
@@ -464,7 +464,7 @@ body {
   }
 }
 
-/* High-DPI Adjustments (e.g., S21 Ultra) */
+/* High-DPI Adjustments */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .brand-title,
   .login-title,
@@ -473,17 +473,17 @@ body {
   }
 
   .input-field,
-  .action-btn {
+  .login-action-btn { /* Updated from .action-btn */
     border-radius: 30px;
   }
 
   .login-box,
   .intro-section {
-    backdrop-filter: blur(15px); /* Slightly less blur for sharper edges */
+    backdrop-filter: blur(15px);
   }
 }
 
-/* Tablets (e.g., iPad, Galaxy Tab) */
+/* Tablets */
 @media (min-width: 600px) and (max-width: 900px) {
   .login-wrapper {
     gap: 2.5rem;

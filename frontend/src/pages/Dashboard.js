@@ -34,7 +34,6 @@ const Dashboard = () => {
       auth: { token: `Bearer ${token}` },
     });
 
-    // Listen for room updates
     socket.on('roomUpdated', (updatedRoom) => {
       setRooms((prevRooms) =>
         prevRooms.map((room) =>
@@ -322,7 +321,7 @@ const Dashboard = () => {
               rooms
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((room) => (
-                  <div key={room._id} className="room-card" onClick={() => goToChat(room._id)}>
+                  <div key={room._id} className="room-card">
                     <div className="room-info">
                       <h3>{room.roomName}</h3>
                       <p>Participants: {room.participants.length}/3</p>
@@ -330,18 +329,24 @@ const Dashboard = () => {
                     </div>
                     <div className="room-actions">
                       <button
-                        className="copy-btn"
+                        className="action-btn open-btn"
+                        onClick={() => goToChat(room._id)}
+                        aria-label={`Open room ${room.roomName}`}
+                      >
+                        Open Room
+                      </button>
+                      <button
+                        className="action-btn copy-btn"
                         onClick={(e) => {
                           e.stopPropagation();
                           copyRoomCode(room.roomCode);
                         }}
                         aria-label={`Copy room code ${room.roomCode}`}
                       >
-                        📋
+                        Copy Code
                       </button>
-                      <span className="chat-arrow">➔</span>
                       <button
-                        className="leave-btn"
+                        className="action-btn leave-btn"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowLeaveConfirm(room._id);

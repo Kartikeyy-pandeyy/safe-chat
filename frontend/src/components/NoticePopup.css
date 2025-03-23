@@ -1,0 +1,255 @@
+/* CSS Variables */
+:root {
+    --primary-cyan: #00ffe0;
+    --secondary-purple: #8a2be2;
+    --dark-bg-start: #0d0221; /* From Login.css */
+    --dark-bg-mid: #2a1b3d;
+    --dark-bg-end: #44318d;
+    --text-light: #d4c8ff;
+    --glow-subtle: rgba(0, 255, 224, 0.4);
+    --shadow-base: rgba(0, 0, 0, 0.8);
+    --shadow-glow: rgba(142, 43, 226, 0.3);
+    --transition-speed: 0.4s;
+  }
+  
+  /* Overlay */
+  .notice-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: overlayFadeIn 0.7s ease-out forwards;
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Popup Container */
+  .notice-popup-content {
+    position: relative;
+    background: linear-gradient(135deg, var(--dark-bg-start) 0%, var(--dark-bg-mid) 50%, var(--dark-bg-end) 100%); /* Dual-toned from Login.css */
+    border: 2px solid var(--secondary-purple);
+    border-radius: 15px;
+    padding: clamp(2rem, 3vw, 3rem);
+    max-width: clamp(340px, 85vw, 580px);
+    width: 100%;
+    min-height: 300px;
+    box-shadow: 
+      0 0 20px var(--shadow-base),
+      0 0 40px var(--shadow-glow),
+      inset 0 0 10px rgba(0, 0, 0, 0.4); /* Matte finish */
+    animation: popupRise 0.6s ease-out forwards;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    overflow: hidden;
+    backdrop-filter: blur(5px); /* Subtle matte effect */
+  }
+  
+  /* Matte Overlay */
+  .notice-popup-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05); /* Faint white overlay for matte finish */
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  /* Subtle Border Glow */
+  .notice-popup-content::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 15px;
+    background: var(--secondary-purple);
+    filter: blur(4px);
+    opacity: 0.4;
+    z-index: -1;
+  }
+  
+  /* Particles Styling */
+  .notice-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0.7;
+  }
+  
+  /* Close Button (Cross) */
+  .notice-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: 1px solid var(--primary-cyan);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    color: var(--primary-cyan);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-shadow: 0 0 5px var(--glow-subtle);
+  }
+  
+  .notice-close-btn:hover {
+    background: var(--secondary-purple);
+    color: #fff;
+    border-color: var(--secondary-purple);
+    box-shadow: 0 0 15px var(--shadow-glow);
+    transform: rotate(90deg); /* Subtle rotation for effect */
+  }
+  
+  /* Title */
+  .notice-popup-title {
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    color: var(--primary-cyan);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    text-shadow: 
+      0 0 8px var(--glow-subtle),
+      0 0 15px var(--shadow-glow);
+    margin-bottom: clamp(1.5rem, 2vw, 2rem);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Body Container */
+  .notice-popup-body {
+    font-family: 'Montserrat', 'Arial', sans-serif;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 1rem 0;
+  }
+  
+  /* Message */
+  .notice-popup-message {
+    font-size: clamp(0.95rem, 2vw, 1.15rem);
+    color: var(--text-light);
+    font-weight: 300;
+    line-height: 1.9;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 3px var(--shadow-base);
+    opacity: 0;
+    animation: messageFade 0.8s ease-out 0.2s forwards;
+    text-align: center;
+  }
+  
+  /* Highlighted Text */
+  .notice-popup-message .highlight {
+    color: var(--primary-cyan);
+    font-weight: 500;
+    text-shadow: 0 0 6px var(--glow-subtle);
+  }
+  
+  /* Animations */
+  @keyframes overlayFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0); }
+    to { opacity: 1; backdrop-filter: blur(10px); }
+  }
+  
+  @keyframes popupRise {
+    from {
+      opacity: 0;
+      transform: translateY(40px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes messageFade {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .notice-popup-content {
+      padding: 1.5rem;
+      max-width: 90vw;
+      min-height: 250px;
+    }
+  
+    .notice-popup-title {
+      font-size: 1.8rem;
+      letter-spacing: 3px;
+    }
+  
+    .notice-popup-message {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+  
+    .notice-close-btn {
+      width: 25px;
+      height: 25px;
+      font-size: 1.2rem;
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .notice-popup-content {
+      padding: 1.2rem;
+      max-width: 95vw;
+      min-height: 220px;
+    }
+  
+    .notice-popup-title {
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+    }
+  
+    .notice-popup-message {
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+  
+    .notice-close-btn {
+      width: 20px;
+      height: 20px;
+      font-size: 1rem;
+    }
+  }
+  
+  /* High-DPI Adjustments */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .notice-popup-content {
+      border-radius: 12px;
+    }
+  
+    .notice-popup-title {
+      text-shadow: 0 0 6px var(--glow-subtle);
+    }
+  
+    .notice-close-btn {
+      border-radius: 50%;
+    }
+  }

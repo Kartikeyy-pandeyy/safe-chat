@@ -243,7 +243,7 @@ h1 {
 }
 
 .input-field {
-  display: block; /* Ensure input is visible */
+  display: block;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(0, 255, 224, 0.2);
   border-radius: 25px;
@@ -253,9 +253,9 @@ h1 {
   outline: none;
   flex: 1;
   transition: all 0.3s ease;
-  opacity: 1; /* Ensure visibility */
-  min-width: 180px; /* Prevent collapse */
-  width: 125%; /* Increase width by 125% */
+  opacity: 1;
+  min-width: 180px;
+  width: 125%;
 }
 
 .input-field:focus {
@@ -277,16 +277,19 @@ h1 {
 
 .action-btn {
   background: linear-gradient(90deg, #00ffe0 0%, #8a2be2 100%);
-  border: 1px solid rgba(0, 255, 224, 0.3); /* Added border for better aesthetics */
-  border-radius: 25px;
-  padding: clamp(0.45rem, 0.9vw, 0.675rem) clamp(0.75rem, 1.5vw, 1.125rem); /* Reduced by 25% */
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 20px;
+  padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
   color: #fff;
-  font-size: clamp(0.6rem, 1.2vw, 0.75rem); /* Reduced font size by 25% */
-  font-weight: 500;
+  font-size: clamp(0.65rem, 1.3vw, 0.8rem);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 150px; /* Slightly smaller for compactness */
+  text-align: center;
 }
 
 .action-btn::before {
@@ -296,14 +299,13 @@ h1 {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.4s ease;
 }
 
 .action-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(0, 255, 224, 0.6);
-  background: linear-gradient(90deg, #00ffe0 20%, #8a2be2 80%);
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.7);
 }
 
 .action-btn:hover:not(:disabled)::before {
@@ -318,136 +320,143 @@ h1 {
 
 .create-btn {
   background: linear-gradient(90deg, #ff007a 0%, #ff5e62 100%);
-  border: 1px solid rgba(255, 94, 98, 0.3); /* Added border */
+  border: 1px solid rgba(255, 94, 98, 0.3);
 }
 
 .create-btn:hover:not(:disabled) {
   background: linear-gradient(90deg, #ff007a 20%, #ff5e62 80%);
-  box-shadow: 0 0 15px rgba(255, 94, 98, 0.6);
+  box-shadow: 0 0 12px rgba(255, 94, 98, 0.7);
 }
 
 .refresh-btn {
   background: linear-gradient(90deg, #b388ff 0%, #8a2be2 100%);
-  border: 1px solid rgba(179, 136, 255, 0.3); /* Added border */
-  width: 100%; /* Fit the container */
-  padding: clamp(0.45rem, 0.9vw, 0.675rem); /* Reduced by 25% */
-  font-size: clamp(0.6rem, 1.2vw, 0.75rem); /* Reduced font size by 25% */
+  border: 1px solid rgba(179, 136, 255, 0.3);
+  width: 100%;
+  padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+  font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   display: flex;
   align-items: center;
-  justify-content: center; /* Center text */
-  text-align: center;
+  justify-content: center;
 }
 
 .refresh-btn:hover:not(:disabled) {
   background: linear-gradient(90deg, #b388ff 20%, #8a2be2 80%);
-  box-shadow: 0 0 15px rgba(179, 136, 255, 0.6);
+  box-shadow: 0 0 12px rgba(179, 136, 255, 0.7);
 }
 
+/* Room Grid */
 .room-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(clamp(260px, 30vw, 320px), 1fr));
-  gap: clamp(1rem, 2vw, 1.5rem);
+  gap: clamp(0.8rem, 1.5vw, 1.2rem);
 }
 
 .room-card {
-  background: rgba(255, 255, 255, 0.05);
-  padding: clamp(1rem, 2vw, 1.5rem);
-  border-radius: 15px;
-  border: 1px solid rgba(0, 255, 224, 0.1);
+  background: linear-gradient(145deg, rgba(13, 2, 33, 0.9), rgba(68, 49, 141, 0.7));
+  padding: clamp(0.8rem, 1.5vw, 1.2rem); /* Reduced height */
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 224, 0.4);
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
-  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 10px rgba(0, 255, 224, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.room-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(0, 255, 224, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .room-card:hover {
-  transform: translateY(-5px);
-  background: rgba(0, 255, 224, 0.1);
-  box-shadow: 0 5px 20px rgba(0, 255, 224, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 255, 224, 0.4);
+}
+
+.room-card:hover::before {
+  opacity: 1;
 }
 
 .room-info {
-  flex: 1;
+  margin-bottom: clamp(0.5rem, 1vw, 0.8rem); /* Reduced spacing */
 }
 
 .room-card h3 {
   font-size: clamp(1rem, 2vw, 1.3rem);
   color: #00ffe0;
-  margin-bottom: clamp(0.2rem, 0.5vw, 0.4rem);
+  margin: 0 0 clamp(0.2rem, 0.4vw, 0.3rem);
+  text-shadow: 0 0 6px rgba(0, 255, 224, 0.5);
 }
 
 .room-card p {
-  font-size: clamp(0.8rem, 1.6vw, 1rem);
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
   color: #d4b8ff;
   font-weight: 300;
   margin: 0;
+  line-height: 1.3;
 }
 
 .room-code {
-  font-size: clamp(0.7rem, 1.4vw, 0.9rem);
+  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
   color: #b388ff;
-  margin-top: clamp(0.2rem, 0.5vw, 0.4rem);
+  margin-top: clamp(0.2rem, 0.4vw, 0.3rem);
 }
 
 .room-actions {
   display: flex;
+  gap: clamp(0.4rem, 0.8vw, 0.6rem);
+  justify-content: flex-end;
   align-items: center;
-  gap: clamp(0.5rem, 1vw, 1rem);
+}
+
+/* Room Action Buttons */
+.open-btn {
+  background: linear-gradient(90deg, #00ff99 0%, #00ffe0 100%);
+  border: 1px solid rgba(0, 255, 153, 0.4);
+  padding-top: clamp(0.5rem, 1vw, 0.7rem); /* Extra top padding for alignment */
+}
+
+.open-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #00ff99 20%, #00ffe0 80%);
+  box-shadow: 0 0 12px rgba(0, 255, 153, 0.7);
 }
 
 .copy-btn {
-  background: rgba(179, 136, 255, 0.2);
-  border: 1px solid rgba(179, 136, 255, 0.5);
-  border-radius: 50%;
-  width: clamp(24px, 4vw, 32px);
-  height: clamp(24px, 4vw, 32px);
-  color: #fff;
-  font-size: clamp(0.8rem, 1.6vw, 1rem);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background: linear-gradient(90deg, #b388ff 0%, #8a2be2 100%);
+  border: 1px solid rgba(179, 136, 255, 0.4);
+  padding-top: clamp(0.5rem, 1vw, 0.7rem); /* Extra top padding for alignment */
 }
 
-.copy-btn:hover {
-  background: #b388ff;
-  box-shadow: 0 0 10px rgba(179, 136, 255, 0.5);
+.copy-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #b388ff 20%, #8a2be2 80%);
+  box-shadow: 0 0 12px rgba(179, 136, 255, 0.7);
 }
-
-.chat-arrow {
-  color: #b388ff;
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  transition: color 0.3s ease;
-}
-
-.room-card:hover .chat-arrow { color: #00ffe0; }
 
 .leave-btn {
-  background: #ff5e62;
-  border: none;
-  border-radius: 20px;
-  padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.8rem, 1.5vw, 1rem);
-  color: #fff;
-  font-size: clamp(0.7rem, 1.5vw, 0.9rem);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background: linear-gradient(90deg, #ff5e62 0%, #ff007a 100%);
+  border: 1px solid rgba(255, 94, 98, 0.4);
 }
 
 .leave-btn:hover:not(:disabled) {
-  background: #ff007a;
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(255, 94, 98, 0.5);
-}
-
-.leave-btn:disabled {
-  background: #666;
-  cursor: not-allowed;
-  opacity: 0.7;
+  background: linear-gradient(90deg, #ff5e62 20%, #ff007a 80%);
+  box-shadow: 0 0 12px rgba(255, 94, 98, 0.7);
 }
 
 .no-rooms-card {
   background: rgba(255, 255, 255, 0.05);
-  padding: clamp(1rem, 2vw, 1.5rem);
-  border-radius: 15px;
+  padding: clamp(0.8rem, 1.5vw, 1.2rem);
+  border-radius: 12px;
   text-align: center;
   border: 1px dashed #b388ff;
 }
@@ -551,22 +560,32 @@ h1 {
   .refresh-container { width: 100%; }
   .create-form, .join-form { flex-direction: column; width: 100%; }
   .input-field {
-    width: 100%; /* Override 125% for mobile */
+    width: 100%;
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
   }
   .action-btn {
     width: 100%;
-    padding: 0.5rem 1rem; /* Adjusted for mobile */
+    max-width: none;
+    padding: 0.5rem 1rem;
     font-size: 0.9rem;
+    padding-top: 0.6rem; /* Adjusted for mobile */
   }
   .refresh-btn {
     width: 100%;
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
   }
-  .room-grid { grid-template-columns: 1fr; }
-  .room-card { flex-direction: column; text-align: center; gap: 0.8rem; }
+  .room-grid { 
+    grid-template-columns: 1fr; 
+    gap: 0.8rem;
+  }
+  .room-card { padding: 0.8rem; }
+  .room-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
   .bottom-nav { display: flex; }
   .sidebar { width: 80%; }
 }
@@ -577,36 +596,33 @@ h1 {
   .forms-container { width: 100%; }
   .refresh-container { width: 100%; }
   .create-form, .join-form { width: clamp(280px, 45vw, 350px); }
-  .input-field {
-    width: 125%; /* Keep 125% increase */
-  }
+  .input-field { width: 125%; }
   .action-btn {
-    padding: clamp(0.45rem, 0.9vw, 0.675rem) clamp(0.75rem, 1.5vw, 1.125rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .refresh-btn {
     width: 100%;
-    max-width: 150px; /* Slightly smaller for tablet */
-    padding: clamp(0.45rem, 0.9vw, 0.675rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    max-width: 150px;
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .room-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .room-actions { justify-content: flex-end; }
   .bottom-nav { display: flex; }
   .sidebar { width: clamp(220px, 25vw, 280px); }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .main-content { padding: 2.5rem; }
-  .input-field {
-    width: 125%; /* Keep 125% increase */
-  }
+  .input-field { width: 125%; }
   .action-btn {
-    padding: clamp(0.45rem, 0.9vw, 0.675rem) clamp(0.75rem, 1.5vw, 1.125rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .refresh-btn {
-    padding: clamp(0.45rem, 0.9vw, 0.675rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .room-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .bottom-nav { display: none; }
@@ -614,16 +630,14 @@ h1 {
 
 @media (min-width: 1025px) {
   .main-content { padding: 3rem; }
-  .input-field {
-    width: 125%; /* Keep 125% increase */
-  }
+  .input-field { width: 125%; }
   .action-btn {
-    padding: clamp(0.45rem, 0.9vw, 0.675rem) clamp(0.75rem, 1.5vw, 1.125rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .refresh-btn {
-    padding: clamp(0.45rem, 0.9vw, 0.675rem);
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) clamp(0.7rem, 1.4vw, 1rem);
+    font-size: clamp(0.65rem, 1.3vw, 0.8rem);
   }
   .room-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
   .bottom-nav { display: none; }
@@ -631,18 +645,17 @@ h1 {
 
 /* High-DPI Adjustments */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  .sidebar, .room-card, .popup-content { backdrop-filter: blur(15px); }
-  h1, .room-card h3 { text-shadow: 0 0 10px rgba(0, 255, 224, 0.7); }
-  .action-btn, .leave-btn, .copy-btn { border-radius: 30px; }
+  .sidebar, .room-card, .popup-content { backdrop-filter: blur(12px); }
+  h1, .room-card h3 { text-shadow: 0 0 8px rgba(0, 255, 224, 0.7); }
+  .action-btn { border-radius: 25px; }
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .particle, .action-btn, .leave-btn, .copy-btn, .room-card {
-    animation: none;
+  .particle, .action-btn, .room-card {
     transition: none;
   }
-  .action-btn::before {
+  .action-btn::before, .room-card::before {
     transition: none;
   }
 }
