@@ -81,6 +81,7 @@ const registerUser = [
         email,
         password,
         faceId,
+        faceImage: imageBuffer, // Save the image buffer
       });
 
       if (user) {
@@ -173,7 +174,7 @@ const authUser = [
 ];
 
 const getUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select('-faceImage'); // Exclude faceImage from response
   if (user) {
     console.log(`Profile fetched for user: ${user.email}`);
     res.json({
@@ -234,6 +235,7 @@ const updateUserProfile = [
         }
 
         user.faceId = result.FaceRecords[0].Face.FaceId;
+        user.faceImage = imageBuffer; // Save the new image buffer
       } catch (error) {
         console.error(`Face update error for ${user.email}: ${error.message}`);
         res.status(500);

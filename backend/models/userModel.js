@@ -24,6 +24,10 @@ const userSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    faceImage: {
+      type: Buffer, // Store the image as a Buffer
+      default: null,
+    },
   },
   { timestamps: true }
 );

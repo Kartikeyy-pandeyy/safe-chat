@@ -6,7 +6,8 @@ import '../styles/Profile.css';
 const Profile = () => {
   const [username, setUsername] = useState('');
   const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState('');
+  const [preview, setPreview] = useState(''); // For new image preview
+  const [existingImage, setExistingImage] = useState(''); // For existing image from backend
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -23,11 +24,14 @@ const Profile = () => {
           navigate('/login');
           return;
         }
-        const response = await axios.get(`${API_BASE_URL}/users/profile`, { // Changed from /me to /profile
+        const response = await axios.get(`${API_BASE_URL}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsername(response.data.username);
-        setPreview(response.data.faceId ? `${API_BASE_URL}/users/image/${response.data._id}` : ''); // Assuming backend serves image
+        // Set the existing image URL if the user has a faceId
+        if (response.data.faceId) {
+          setExistingImage(`${API_BASE_URL}/users/image/${response.data._id}`);
+        }
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem('token');
@@ -50,7 +54,7 @@ const Profile = () => {
         return;
       }
       setImage(file);
-      setPreview(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file)); // Show preview of the new image
     }
   };
 
@@ -76,6 +80,11 @@ const Profile = () => {
       localStorage.setItem('username', response.data.username);
       setSuccessMessage('Profile updated successfully!');
       setImage(null); // Reset image after upload
+      setPreview(''); // Clear preview
+      // Update existing image after successful update
+      if (response.data.faceId) {
+        setExistingImage(`${API_BASE_URL}/users/image/${response.data._id}`);
+      }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Failed to update profile.');
@@ -106,9 +115,15 @@ const Profile = () => {
           <button className="close-btn" onClick={toggleSidebar}>×</button>
         </div>
         <nav>
-          <button className="nav-btn" onClick={() => navigate('/dashboard')}>Dashboard</button>
-          <button className="nav-btn" onClick={() => navigate('/profile')}>Profile</button>
-          <button className="nav-btn" onClick={handleLogout}>Logout</button>
+          <button className="nav-btn" onClick={() => navigate('/dashboard')}>
+            Dashboard
+          </button>
+          <button className="nav-btn" onClick={() => navigate('/profile')}>
+            Profile
+          </button>
+          <button className="nav-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </nav>
       </div>
 
@@ -152,9 +167,13 @@ const Profile = () => {
               className="file-input"
               aria-label="Upload face image"
             />
-            {preview && (
+            {(preview || existingImage) && (
               <div className="image-preview-container">
-                <img src={preview} alt="Preview" className="image-preview" />
+                <img
+                  src={preview || existingImage} // Show new preview if available, otherwise show existing image
+                  alt="Face Preview"
+                  className="image-preview"
+                />
               </div>
             )}
           </div>
