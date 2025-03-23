@@ -256,7 +256,7 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     border: 1px solid rgba(0, 255, 224, 0.2);
-    min-height: clamp(120px, 25vw, 200px); /* Ensure consistent height even if no image */
+    min-height: clamp(120px, 25vw, 200px);
   }
   
   .image-preview {
@@ -266,7 +266,7 @@
     border: 2px solid rgba(0, 255, 224, 0.3);
     box-shadow: 0 0 20px rgba(0, 255, 224, 0.4);
     transition: transform 0.3s ease;
-    object-fit: cover; /* Ensure the image scales nicely */
+    object-fit: cover;
   }
   
   .image-preview:hover { transform: scale(1.05); }

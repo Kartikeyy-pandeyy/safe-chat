@@ -24,13 +24,20 @@ const Profile = () => {
           navigate('/login');
           return;
         }
+        // Fetch user profile
         const response = await axios.get(`${API_BASE_URL}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsername(response.data.username);
-        // Set the existing image URL if the user has a faceId
+
+        // Fetch the existing image if faceId exists
         if (response.data.faceId) {
-          setExistingImage(`${API_BASE_URL}/users/image/${response.data._id}`);
+          const imageResponse = await axios.get(`${API_BASE_URL}/users/image/${response.data._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            responseType: 'blob', // Fetch as a blob
+          });
+          const imageUrl = URL.createObjectURL(imageResponse.data);
+          setExistingImage(imageUrl);
         }
       } catch (err) {
         if (err.response?.status === 401) {
@@ -81,9 +88,14 @@ const Profile = () => {
       setSuccessMessage('Profile updated successfully!');
       setImage(null); // Reset image after upload
       setPreview(''); // Clear preview
-      // Update existing image after successful update
+      // Fetch the updated image
       if (response.data.faceId) {
-        setExistingImage(`${API_BASE_URL}/users/image/${response.data._id}`);
+        const imageResponse = await axios.get(`${API_BASE_URL}/users/image/${response.data._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob',
+        });
+        const imageUrl = URL.createObjectURL(imageResponse.data);
+        setExistingImage(imageUrl);
       }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
@@ -170,7 +182,7 @@ const Profile = () => {
             {(preview || existingImage) && (
               <div className="image-preview-container">
                 <img
-                  src={preview || existingImage} // Show new preview if available, otherwise show existing image
+                  src={preview || existingImage}
                   alt="Face Preview"
                   className="image-preview"
                 />
