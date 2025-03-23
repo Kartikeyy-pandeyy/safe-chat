@@ -3,9 +3,10 @@ const { registerUser, authUser, getUserProfile, updateUserProfile } = require('.
 const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-router.post('/register', registerUser);
-router.post('/login', authUser);
-router.get('/me', protect, getUserProfile);
-router.put('/update', protect, updateUserProfile);
+// User routes
+router.post('/register', registerUser); // Register a new user
+router.post('/login', authUser); // Login a user
+router.get('/profile', protect, getUserProfile); // Get user profile (changed from /me to /profile)
+router.put('/update', protect, updateUserProfile); // Update user profile
 
 module.exports = router;
