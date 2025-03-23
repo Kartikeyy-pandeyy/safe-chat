@@ -28,6 +28,7 @@ app.use(cors({
   origin: [
     'https://safechatapp.netlify.app',
     'http://localhost:3000',
+    'http://localhost:5173',
   ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],

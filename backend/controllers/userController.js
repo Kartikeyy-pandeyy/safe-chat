@@ -14,7 +14,6 @@ const validateRegister = [
   body('username').isLength({ min: 3, max: 20 }).withMessage('Username must be 3-20 characters'),
   body('email').isEmail().withMessage('Please enter a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  // No imageBase64 validation here; multer handles the file requirement
 ];
 
 // Validation middleware for login
@@ -28,9 +27,9 @@ const validateLogin = [
   }),
 ];
 
-// Validation middleware for updating face
-const validateUpdateFace = [
-  // No imageBase64 validation; multer ensures the file is present
+// Validation middleware for updating profile
+const validateUpdateProfile = [
+  body('username').optional().isLength({ min: 3, max: 20 }).withMessage('Username must be 3-20 characters'),
 ];
 
 const registerUser = [
@@ -59,13 +58,12 @@ const registerUser = [
     console.log(`Image buffer size: ${imageBuffer.length} bytes`);
 
     try {
-      // Sanitize email by replacing '@' with '_'
       const sanitizedExternalImageId = email.replace('@', '_');
 
       const indexCommand = new IndexFacesCommand({
         CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
         Image: { Bytes: imageBuffer },
-        ExternalImageId: sanitizedExternalImageId, // e.g., 'test1_example.com'
+        ExternalImageId: sanitizedExternalImageId,
       });
       console.log(`Sending IndexFacesCommand for ${email} to collection: ${process.env.AWS_REKOGNITION_COLLECTION}`);
       const result = await rekognition.send(indexCommand);
@@ -123,7 +121,7 @@ const authUser = [
       throw new Error('Invalid email or password');
     }
 
-    if (req.file) { // Check if image file was uploaded
+    if (req.file) {
       const imageBuffer = req.file.buffer;
 
       try {
@@ -174,8 +172,23 @@ const authUser = [
   }),
 ];
 
-const updateFace = [
-  validateUpdateFace,
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (user) {
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      faceId: user.faceId,
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+const updateUserProfile = [
+  validateUpdateProfile,
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -183,63 +196,61 @@ const updateFace = [
       throw new Error(errors.array()[0].msg);
     }
 
-    if (!req.file) {
-      res.status(400);
-      throw new Error('Image is required');
-    }
-
     const user = await User.findById(req.user._id);
-
     if (!user) {
       res.status(404);
       throw new Error('User not found');
     }
 
-    const imageBuffer = req.file.buffer;
+    const { username } = req.body;
 
-    try {
-      if (user.faceId) {
-        const deleteCommand = new DeleteFacesCommand({
+    user.username = username || user.username;
+
+    if (req.file) {
+      const imageBuffer = req.file.buffer;
+
+      try {
+        if (user.faceId) {
+          const deleteCommand = new DeleteFacesCommand({
+            CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
+            FaceIds: [user.faceId],
+          });
+          await rekognition.send(deleteCommand);
+        }
+
+        const sanitizedExternalImageId = user.email.replace('@', '_');
+
+        const indexCommand = new IndexFacesCommand({
           CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
-          FaceIds: [user.faceId],
+          Image: { Bytes: imageBuffer },
+          ExternalImageId: sanitizedExternalImageId,
         });
-        await rekognition.send(deleteCommand);
+        const result = await rekognition.send(indexCommand);
+
+        if (result.FaceRecords.length === 0) {
+          res.status(400);
+          throw new Error('No face detected in the image');
+        }
+
+        user.faceId = result.FaceRecords[0].Face.FaceId;
+      } catch (error) {
+        console.error(`Face update error for ${user.email}: ${error.message}`);
+        res.status(500);
+        throw new Error('Face update failed');
       }
-
-      // Sanitize email by replacing '@' with '_'
-      const sanitizedExternalImageId = user.email.replace('@', '_');
-
-      const indexCommand = new IndexFacesCommand({
-        CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
-        Image: { Bytes: imageBuffer },
-        ExternalImageId: sanitizedExternalImageId, // Fixed
-      });
-      const result = await rekognition.send(indexCommand);
-
-      if (result.FaceRecords.length === 0) {
-        res.status(400);
-        throw new Error('No face detected in the image');
-      }
-
-      const newFaceId = result.FaceRecords[0].Face.FaceId;
-
-      user.faceId = newFaceId;
-      await user.save();
-
-      console.log(`Face updated for ${user.email}`);
-      res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        faceId: user.faceId,
-        token: generateToken(user._id),
-      });
-    } catch (error) {
-      console.error(`Face update error for ${user.email}: ${error.message}`);
-      res.status(500);
-      throw new Error('Face update failed');
     }
+
+    await user.save();
+
+    console.log(`Profile updated for ${user.email}`);
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      faceId: user.faceId,
+      token: generateToken(user._id),
+    });
   }),
 ];
 
-module.exports = { registerUser, authUser, updateFace };
+module.exports = { registerUser, authUser, getUserProfile, updateUserProfile };

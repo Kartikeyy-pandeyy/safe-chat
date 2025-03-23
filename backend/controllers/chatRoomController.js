@@ -1,12 +1,20 @@
 const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
 const ChatRoom = require('../models/chatRoomModel');
-const User = require('../models/userModel');
 
 // Validation middleware for room creation
 const validateRoom = [
   body('roomName').isLength({ min: 3 }).withMessage('Room name must be at least 3 characters'),
 ];
+
+// @desc    Fetch all user chat rooms
+// @route   GET /api/chatrooms
+// @access  Private
+const getRooms = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const rooms = await ChatRoom.find({ participants: userId });
+  res.json(rooms);
+});
 
 // @desc    Create a new chat room
 // @route   POST /api/chatrooms/create
@@ -35,12 +43,14 @@ const createRoom = [
       throw new Error('Room name already exists');
     }
 
+    const roomCode = Math.random().toString(36).substr(2, 8).toUpperCase(); // Generate 8-char code
     const chatRoom = await ChatRoom.create({
       roomName,
       participants: [userId],
+      roomCode,
     });
 
-    res.status(201).json(chatRoom);
+    res.status(201).json({ room: chatRoom, roomCode });
   }),
 ];
 
@@ -48,10 +58,10 @@ const createRoom = [
 // @route   POST /api/chatrooms/join
 // @access  Private
 const joinRoom = asyncHandler(async (req, res) => {
-  const { roomName } = req.body;
+  const { roomCode } = req.body; // Changed from roomName to roomCode
   const userId = req.user._id;
 
-  const chatRoom = await ChatRoom.findOne({ roomName });
+  const chatRoom = await ChatRoom.findOne({ roomCode });
   if (!chatRoom) {
     res.status(404);
     throw new Error('Room not found');
@@ -76,36 +86,17 @@ const joinRoom = asyncHandler(async (req, res) => {
   chatRoom.participants.push(userId);
   await chatRoom.save();
 
-  res.json(chatRoom);
+  res.json({ room: chatRoom });
 });
 
 // @desc    Leave a chat room
 // @route   POST /api/chatrooms/leave
 // @access  Private
 const leaveRoom = asyncHandler(async (req, res) => {
-  const { roomName } = req.body;
+  const { roomId } = req.body; // Changed from roomName to roomId
   const userId = req.user._id;
 
-  const chatRoom = await ChatRoom.findOne({ roomName });
-  if (!chatRoom) {
-    res.status(404);
-    throw new Error('Room not found');
-  }
-
-  chatRoom.participants = chatRoom.participants.filter(id => id.toString() !== userId.toString());
-  await chatRoom.save();
-
-  res.json({ message: 'Left room successfully' });
-});
-
-// @desc    Send a message to a chat room
-// @route   POST /api/chatrooms/message
-// @access  Private
-const sendMessage = asyncHandler(async (req, res) => {
-  const { roomName, content } = req.body;
-  const userId = req.user._id;
-
-  const chatRoom = await ChatRoom.findOne({ roomName });
+  const chatRoom = await ChatRoom.findById(roomId);
   if (!chatRoom) {
     res.status(404);
     throw new Error('Room not found');
@@ -116,7 +107,35 @@ const sendMessage = asyncHandler(async (req, res) => {
     throw new Error('Not a participant in this room');
   }
 
-  const message = { sender: userId, content };
+  chatRoom.participants = chatRoom.participants.filter(id => id.toString() !== userId.toString());
+  if (chatRoom.participants.length === 0) {
+    await chatRoom.deleteOne();
+  } else {
+    await chatRoom.save();
+  }
+
+  res.json({ message: 'Left room successfully' });
+});
+
+// @desc    Send a message to a chat room
+// @route   POST /api/chatrooms/message
+// @access  Private
+const sendMessage = asyncHandler(async (req, res) => {
+  const { roomId, content } = req.body; // Changed from roomName to roomId
+  const userId = req.user._id;
+
+  const chatRoom = await ChatRoom.findById(roomId);
+  if (!chatRoom) {
+    res.status(404);
+    throw new Error('Room not found');
+  }
+
+  if (!chatRoom.participants.includes(userId)) {
+    res.status(403);
+    throw new Error('Not a participant in this room');
+  }
+
+  const message = { sender: userId, content, timestamp: new Date() };
   chatRoom.messages.push(message);
   await chatRoom.save();
 
@@ -124,13 +143,13 @@ const sendMessage = asyncHandler(async (req, res) => {
 });
 
 // @desc    Fetch chat room messages
-// @route   GET /api/chatrooms/:roomName/messages
+// @route   GET /api/chatrooms/:roomId/messages
 // @access  Private
 const fetchMessages = asyncHandler(async (req, res) => {
-  const { roomName } = req.params;
+  const { roomId } = req.params; // Changed from roomName to roomId
   const userId = req.user._id;
 
-  const chatRoom = await ChatRoom.findOne({ roomName }).populate('messages.sender', 'username');
+  const chatRoom = await ChatRoom.findById(roomId).populate('messages.sender', 'username');
   if (!chatRoom) {
     res.status(404);
     throw new Error('Room not found');
@@ -144,4 +163,4 @@ const fetchMessages = asyncHandler(async (req, res) => {
   res.json(chatRoom.messages);
 });
 
-module.exports = { createRoom, joinRoom, leaveRoom, sendMessage, fetchMessages };
+module.exports = { getRooms, createRoom, joinRoom, leaveRoom, sendMessage, fetchMessages };

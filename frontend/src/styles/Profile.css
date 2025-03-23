@@ -1,0 +1,278 @@
+/* Base Styles */
+.profile-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0d0221 0%, #2a1b3d 50%, #44318d 100%);
+    color: #fff;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    padding: clamp(1rem, 3vw, 3rem);
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  /* Particles */
+  .profile-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .profile-page .particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .particle {
+    position: absolute;
+    background: rgba(0, 255, 224, 0.3);
+    border-radius: 50%;
+    animation: float 10s infinite ease-in-out;
+  }
+  
+  .particle-1 {
+    width: clamp(10px, 2vw, 20px);
+    height: clamp(10px, 2vw, 20px);
+    top: 10%;
+    left: 15%;
+    animation-delay: 0s;
+  }
+  
+  .particle-2 {
+    width: clamp(8px, 1.5vw, 15px);
+    height: clamp(8px, 1.5vw, 15px);
+    top: 60%;
+    left: 80%;
+    animation-delay: 2s;
+  }
+  
+  .particle-3 {
+    width: clamp(12px, 2.5vw, 25px);
+    height: clamp(12px, 2.5vw, 25px);
+    top: 40%;
+    left: 30%;
+    animation-delay: 4s;
+  }
+  
+  .particle-4 {
+    width: clamp(6px, 1vw, 10px);
+    height: clamp(6px, 1vw, 10px);
+    top: 80%;
+    left: 50%;
+    animation-delay: 6s;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5vh); }
+  }
+  
+  /* Header */
+  header {
+    width: 100%;
+    max-width: 1400px;
+    text-align: center;
+    margin-bottom: clamp(1rem, 2vw, 2rem);
+  }
+  
+  header h1 {
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    color: #00ffe0;
+    text-shadow: 0 0 15px rgba(0, 255, 224, 0.5);
+  }
+  
+  /* Loader */
+  .loader {
+    width: clamp(25px, 3vw, 40px);
+    height: clamp(25px, 3vw, 40px);
+    border: 4px solid #00ffe0;
+    border-top: 4px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Messages */
+  .message-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: clamp(0.5rem, 1vw, 1rem);
+    animation: fadeIn 0.5s ease-in;
+    width: 100%;
+    max-width: 1400px;
+  }
+  
+  .error-message {
+    color: #ff5e62;
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+    text-align: center;
+    background: rgba(255, 94, 98, 0.1);
+    padding: 0.5rem;
+    border-radius: 10px;
+  }
+  
+  .success-message {
+    color: #00ff99;
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+    text-align: center;
+    background: rgba(0, 255, 153, 0.1);
+    padding: 0.5rem;
+    border-radius: 10px;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* Profile Form */
+  .profile-form {
+    width: 100%;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: clamp(1rem, 2vw, 2rem);
+    border-radius: 15px;
+    border: 1px solid rgba(0, 255, 224, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 2vw, 1.5rem);
+    box-shadow: 0 5px 15px rgba(0, 255, 224, 0.2);
+    z-index: 1;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-group label {
+    font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+    color: #b388ff;
+    font-weight: 300;
+  }
+  
+  .input-field {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50px;
+    padding: clamp(0.6rem, 1.2vw, 0.9rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    color: #fff;
+    font-size: clamp(0.8rem, 1.6vw, 1rem);
+    outline: none;
+    box-shadow: inset 0 0 5px rgba(0, 255, 224, 0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .input-field:focus {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 224, 0.5);
+  }
+  
+  .file-input {
+    padding: clamp(0.5rem, 1vw, 0.8rem);
+    color: #d4b8ff;
+    background: none;
+    border: none;
+  }
+  
+  .image-preview {
+    max-width: clamp(150px, 30vw, 250px);
+    border-radius: 10px;
+    margin-top: 0.5rem;
+    box-shadow: 0 0 15px rgba(0, 255, 224, 0.3);
+  }
+  
+  /* Buttons */
+  .action-btn {
+    background: linear-gradient(90deg, #00ffe0 0%, #8a2be2 100%);
+    border: none;
+    border-radius: 50px;
+    padding: clamp(0.6rem, 1.2vw, 0.9rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    color: #fff;
+    font-size: clamp(0.8rem, 1.6vw, 1rem);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  }
+  
+  .action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 224, 0.6);
+    background: linear-gradient(90deg, #00ffe0 20%, #8a2be2 80%);
+  }
+  
+  .back-btn {
+    background: #ff5e62;
+    border: none;
+    border-radius: 50px;
+    padding: clamp(0.6rem, 1.2vw, 0.9rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    color: #fff;
+    font-size: clamp(0.8rem, 1.6vw, 1rem);
+    cursor: pointer;
+    margin-top: clamp(1rem, 2vw, 2rem);
+    transition: background 0.3s ease, transform 0.3s ease;
+  }
+  
+  .back-btn:hover {
+    background: #ff007a;
+    transform: scale(1.05);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .profile-form {
+      width: 100%;
+      padding: 1rem;
+    }
+    .form-group label {
+      font-size: 0.9rem;
+    }
+    .input-field, .file-input, .action-btn, .back-btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+    .image-preview {
+      max-width: 150px;
+    }
+  }
+  
+  @media (min-width: 600px) and (max-width: 900px) {
+    .profile-form {
+      width: 80%;
+    }
+  }
+  
+  @media (min-width: 1200px) {
+    .profile-form {
+      max-width: 700px;
+    }
+  }
+  
+  /* High-DPI Adjustments */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .profile-form {
+      backdrop-filter: blur(15px);
+    }
+    header h1 {
+      text-shadow: 0 0 8px rgba(0, 255, 224, 0.7);
+    }
+    .action-btn, .back-btn {
+      border-radius: 30px;
+    }
+  }
