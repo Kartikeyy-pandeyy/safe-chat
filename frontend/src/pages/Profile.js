@@ -23,7 +23,7 @@ const Profile = () => {
           navigate('/login');
           return;
         }
-        const response = await axios.get(`${API_BASE_URL}/users/me`, {
+        const response = await axios.get(`${API_BASE_URL}/users/profile`, { // Changed from /me to /profile
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsername(response.data.username);

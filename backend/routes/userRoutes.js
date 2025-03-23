@@ -6,7 +6,8 @@ const router = express.Router();
 // User routes
 router.post('/register', registerUser); // Register a new user
 router.post('/login', authUser); // Login a user
-router.get('/profile', protect, getUserProfile); // Get user profile (changed from /me to /profile)
+router.get('/profile', protect, getUserProfile); // Get user profile
+router.get('/me', protect, getUserProfile); // Get user profile (added for compatibility with Profile.js)
 router.put('/update', protect, updateUserProfile); // Update user profile
 
 module.exports = router;
