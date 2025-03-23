@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import io from 'socket.io-client';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
@@ -13,12 +14,43 @@ const Dashboard = () => {
   const [roomCode, setRoomCode] = useState('');
   const [showCodePopup, setShowCodePopup] = useState(false);
   const [loading, setLoading] = useState({ fetch: false, create: false, join: false, leave: {} });
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(null); // Room ID for confirmation
-  const [username, setUsername] = useState(localStorage.getItem('username') || 'User'); // State for username
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(null);
+  const [username, setUsername] = useState(localStorage.getItem('username') || 'User');
   const navigate = useNavigate();
   const API_BASE_URL = 'https://safe-chat-7uuh.onrender.com/api';
+  const SOCKET_URL = 'https://safe-chat-7uuh.onrender.com';
   const MAX_ROOMS = 5;
   const MIN_ROOM_NAME_LENGTH = 3;
+
+  // WebSocket setup
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const socket = io(SOCKET_URL, {
+      auth: { token: `Bearer ${token}` },
+    });
+
+    // Listen for room updates
+    socket.on('roomUpdated', (updatedRoom) => {
+      setRooms((prevRooms) =>
+        prevRooms.map((room) =>
+          room._id === updatedRoom._id ? updatedRoom : room
+        )
+      );
+    });
+
+    socket.on('roomDeleted', (roomId) => {
+      setRooms((prevRooms) => prevRooms.filter((room) => room._id !== roomId));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [navigate]);
 
   // Fetch user profile to get username
   const fetchUserProfile = useCallback(async () => {
@@ -33,7 +65,7 @@ const Dashboard = () => {
       });
       const fetchedUsername = response.data.username;
       setUsername(fetchedUsername);
-      localStorage.setItem('username', fetchedUsername); // Update localStorage
+      localStorage.setItem('username', fetchedUsername);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
@@ -45,7 +77,7 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  // Fetch rooms with debounced callback
+  // Fetch rooms
   const fetchRooms = useCallback(async () => {
     setLoading((prev) => ({ ...prev, fetch: true }));
     try {
@@ -72,7 +104,6 @@ const Dashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Fetch user profile if username is not in localStorage or is 'User'
     if (!localStorage.getItem('username') || localStorage.getItem('username') === 'User') {
       fetchUserProfile();
     }
@@ -106,10 +137,10 @@ const Dashboard = () => {
       setShowCodePopup(true);
       setRoomName('');
       setSuccessMessage('Room created successfully!');
-      fetchRooms(); // Refetch to ensure sync
+      fetchRooms();
       setTimeout(() => {
-        setShowCodePopup(false); // Close popup before navigating
-        navigate(`/chat/${roomId}`); // Navigate to the new room
+        setShowCodePopup(false);
+        navigate(`/chat/${roomId}`);
       }, 2000);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Failed to create room.');
@@ -137,7 +168,7 @@ const Dashboard = () => {
       const { roomId } = response.data;
       setJoinCode('');
       setSuccessMessage('Room joined successfully!');
-      fetchRooms(); // Refetch to ensure sync
+      fetchRooms();
       setTimeout(() => navigate(`/chat/${roomId}`), 1000);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Invalid room code.');
@@ -157,7 +188,7 @@ const Dashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSuccessMessage(response.data.message || 'Left room successfully!');
-      fetchRooms(); // Refetch to ensure sync
+      fetchRooms();
       setShowLeaveConfirm(null);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Failed to leave room.');
@@ -289,7 +320,7 @@ const Dashboard = () => {
           <div className="room-grid">
             {rooms.length > 0 ? (
               rooms
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by newest first
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map((room) => (
                   <div key={room._id} className="room-card" onClick={() => goToChat(room._id)}>
                     <div className="room-info">

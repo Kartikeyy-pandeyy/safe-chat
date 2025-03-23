@@ -7,6 +7,10 @@ const userRoutes = require('./routes/userRoutes');
 const chatRoomRoutes = require('./routes/chatRoomRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const ChatRoom = require('./models/chatRoomModel');
 
 dotenv.config();
 
@@ -20,6 +24,17 @@ console.log('AWS_REKOGNITION_COLLECTION:', process.env.AWS_REKOGNITION_COLLECTIO
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'https://safechatapp.netlify.app',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
+    methods: ['GET', 'POST'],
+  },
+});
 
 // Trust proxy for rate limiting (if behind a proxy like Render)
 app.set('trust proxy', 1);
@@ -35,7 +50,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:5173',
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Added PUT and DELETE for completeness
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -63,8 +78,133 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes
-app.use('/api/users', upload.single('image'), userRoutes); // Apply multer middleware for user routes
-app.use('/api/chatrooms', chatRoomRoutes);
+// Routes
+app.use('/api/users', upload.single('image'), userRoutes);
+app.use('/api/chatrooms', (req, res, next) => {
+  req.io = io; // Attach io to the request object
+  next();
+}, chatRoomRoutes);
+
+// WebSocket Authentication Middleware
+io.use((socket, next) => {
+  const authHeader = socket.handshake.auth.token;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next(new Error('Authentication error: No token provided'));
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded; // Attach user data to socket
+    next();
+  } catch (err) {
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
+// WebSocket Connection Handling
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.user.id}`);
+
+  // Join a room
+  socket.on('joinRoom', async (roomId) => {
+    try {
+      const chatRoom = await ChatRoom.findById(roomId);
+      if (!chatRoom) {
+        socket.emit('error', 'Room not found');
+        return;
+      }
+
+      if (!chatRoom.participants.some(id => id.toString() === socket.user.id)) {
+        socket.emit('error', 'Not a participant in this room');
+        return;
+      }
+
+      socket.join(roomId);
+      console.log(`User ${socket.user.id} joined room ${roomId}`);
+    } catch (err) {
+      socket.emit('error', 'Failed to join room');
+    }
+  });
+
+  // Handle sending a message
+  socket.on('sendMessage', async (messageData) => {
+    try {
+      const { roomId, content, sender } = messageData;
+
+      const chatRoom = await ChatRoom.findById(roomId);
+      if (!chatRoom) {
+        socket.emit('error', 'Room not found');
+        return;
+      }
+
+      if (!chatRoom.participants.some(id => id.toString() === socket.user.id)) {
+        socket.emit('error', 'Not a participant in this room');
+        return;
+      }
+
+      const message = {
+        sender: socket.user.id,
+        content,
+        timestamp: new Date(),
+      };
+
+      chatRoom.messages.push(message);
+      await chatRoom.save();
+
+      // Populate the sender details for the message
+      const populatedMessage = await ChatRoom.findById(roomId)
+        .populate('messages.sender', 'username')
+        .then(room => room.messages[room.messages.length - 1]);
+
+      // Broadcast the message to all users in the room
+      io.to(roomId).emit('newMessage', populatedMessage);
+
+      // Emit room update to all users (for dashboard updates)
+      const updatedRoom = await ChatRoom.findById(roomId)
+        .select('roomName roomCode participants createdAt');
+      io.emit('roomUpdated', updatedRoom);
+    } catch (err) {
+      socket.emit('error', 'Failed to send message');
+    }
+  });
+
+  // Handle room updates (e.g., when a user leaves)
+  socket.on('leaveRoom', async (roomId) => {
+    try {
+      const chatRoom = await ChatRoom.findById(roomId);
+      if (!chatRoom) {
+        socket.emit('error', 'Room not found');
+        return;
+      }
+
+      if (!chatRoom.participants.some(id => id.toString() === socket.user.id)) {
+        socket.emit('error', 'Not a participant in this room');
+        return;
+      }
+
+      chatRoom.participants = chatRoom.participants.filter(
+        id => id.toString() !== socket.user.id
+      );
+
+      if (chatRoom.participants.length === 0) {
+        await ChatRoom.deleteOne({ _id: roomId });
+        io.emit('roomDeleted', roomId);
+      } else {
+        await chatRoom.save();
+        const updatedRoom = await ChatRoom.findById(roomId)
+          .select('roomName roomCode participants createdAt');
+        io.emit('roomUpdated', updatedRoom);
+      }
+    } catch (err) {
+      socket.emit('error', 'Failed to leave room');
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.user.id}`);
+  });
+});
 
 // Error handling middleware
 app.use(notFound);
@@ -72,4 +212,4 @@ app.use(errorHandler);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server started on port ${PORT}`));

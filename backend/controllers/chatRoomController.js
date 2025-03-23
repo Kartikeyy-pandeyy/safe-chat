@@ -55,6 +55,11 @@ const createRoom = [
       roomCode,
     });
 
+    // Emit room update to all users
+    const updatedRoom = await ChatRoom.findById(chatRoom._id)
+      .select('roomName roomCode participants createdAt');
+    req.io.emit('roomUpdated', updatedRoom);
+
     res.status(201).json({ roomId: chatRoom._id, roomName: chatRoom.roomName, roomCode });
   }),
 ];
@@ -91,6 +96,11 @@ const joinRoom = asyncHandler(async (req, res) => {
   chatRoom.participants.push(userId);
   await chatRoom.save();
 
+  // Emit room update to all users
+  const updatedRoom = await ChatRoom.findById(chatRoom._id)
+    .select('roomName roomCode participants createdAt');
+  req.io.emit('roomUpdated', updatedRoom);
+
   res.json({ roomId: chatRoom._id, roomName: chatRoom.roomName, roomCode });
 });
 
@@ -115,9 +125,13 @@ const leaveRoom = asyncHandler(async (req, res) => {
   chatRoom.participants = chatRoom.participants.filter(id => id.toString() !== userId.toString());
   if (chatRoom.participants.length === 0) {
     await ChatRoom.deleteOne({ _id: roomId });
+    req.io.emit('roomDeleted', roomId);
     res.json({ message: 'Room deleted as no participants remain' });
   } else {
     await chatRoom.save();
+    const updatedRoom = await ChatRoom.findById(roomId)
+      .select('roomName roomCode participants createdAt');
+    req.io.emit('roomUpdated', updatedRoom);
     res.json({ message: 'Left room successfully' });
   }
 });
@@ -155,6 +169,14 @@ const sendMessage = [
     const populatedMessage = await ChatRoom.findById(roomId)
       .populate('messages.sender', 'username')
       .then(room => room.messages[room.messages.length - 1]);
+
+    // Emit the message via WebSocket
+    req.io.to(roomId).emit('newMessage', populatedMessage);
+
+    // Emit room update to all users
+    const updatedRoom = await ChatRoom.findById(roomId)
+      .select('roomName roomCode participants createdAt');
+    req.io.emit('roomUpdated', updatedRoom);
 
     res.status(201).json(populatedMessage);
   }),

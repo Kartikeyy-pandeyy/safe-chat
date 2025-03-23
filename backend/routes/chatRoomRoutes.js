@@ -24,7 +24,7 @@ router.post('/join', protect, joinRoom);
 // Leave a chat room
 router.post('/leave', protect, leaveRoom);
 
-// Send a message to a chat room
+// Send a message to a chat room (optional, since WebSocket handles this)
 router.post('/message', protect, sendMessage);
 
 // Fetch chat room messages
