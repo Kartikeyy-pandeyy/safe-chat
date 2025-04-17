@@ -1,6 +1,6 @@
 # SafeChat 💬
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-blue?style=for-the-badge)](https://safechat.netlify.app/)  
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-blue?style=for-the-badge)](https://safechatapp.netlify.app/)  
 
 > 🔒 **Chat Securely, Connect Effortlessly!** 🌐✨  
 > 
@@ -9,7 +9,7 @@
 ---
 
 ## 🌐 Live Demo
-🎉 **Try it out here:** 👉 [safechat.netlify.app](https://safechat.netlify.app/) 🚀  
+🎉 **Try it out here:** 👉 [safechat.netlify.app](https://safechatapp.netlify.app/) 🚀  
 *(Update the URL if it differs from the placeholder.)*
 
 ---
