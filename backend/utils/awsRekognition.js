@@ -1,4 +1,6 @@
 const { RekognitionClient } = require('@aws-sdk/client-rekognition');
+const dotenv = require('dotenv');
+dotenv.config(); // Ensure environment variables are loaded
 
 const rekognition = new RekognitionClient({
   region: process.env.AWS_REGION,
