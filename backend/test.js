@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { STSClient, GetCallerIdentityCommand } = require("@aws-sdk/client-sts");
+const { RekognitionClient, CreateCollectionCommand } = require('@aws-sdk/client-rekognition');
 
-const sts = new STSClient({
+const client = new RekognitionClient({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -9,11 +9,16 @@ const sts = new STSClient({
   },
 });
 
-(async () => {
+async function test() {
   try {
-    const result = await sts.send(new GetCallerIdentityCommand({}));
-    console.log("Connected to AWS as:", result.Arn);
+    const command = new CreateCollectionCommand({
+      CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
+    });
+    const result = await client.send(command);
+    console.log('Success:', result);
   } catch (err) {
-    console.error("Invalid credentials:", err);
+    console.error('Error:', err.name, err.message);
   }
-})();
+}
+
+test();

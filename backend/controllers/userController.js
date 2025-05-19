@@ -58,18 +58,22 @@ const registerUser = [
     console.log(`Image buffer size: ${imageBuffer.length} bytes`);
 
     try {
-      const sanitizedExternalImageId = email.replace('@', '_');
+      const sanitizedExternalImageId = email.replace(/[@.]/g, '_'); // Replace @ and . for safer ID
+      console.log(`Indexing face for ${email} with ExternalImageId: ${sanitizedExternalImageId}`);
 
       const indexCommand = new IndexFacesCommand({
         CollectionId: process.env.AWS_REKOGNITION_COLLECTION,
         Image: { Bytes: imageBuffer },
         ExternalImageId: sanitizedExternalImageId,
+        DetectionAttributes: ['ALL'],
+        MaxFaces: 1, // Ensure only one face is indexed per image
       });
+
       console.log(`Sending IndexFacesCommand for ${email} to collection: ${process.env.AWS_REKOGNITION_COLLECTION}`);
       const result = await rekognition.send(indexCommand);
       console.log(`Rekognition result: ${JSON.stringify(result)}`);
 
-      if (result.FaceRecords.length === 0) {
+      if (!result.FaceRecords || result.FaceRecords.length === 0) {
         res.status(400);
         throw new Error('No face detected in the image');
       }
@@ -81,26 +85,25 @@ const registerUser = [
         email,
         password,
         faceId,
-        faceImage: imageBuffer, // Save the image buffer
+        faceImage: imageBuffer,
       });
 
-      if (user) {
-        console.log(`User registered: ${email}`);
-        res.status(201).json({
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-          faceId: user.faceId,
-          token: generateToken(user._id),
-        });
-      } else {
-        res.status(400);
-        throw new Error('Invalid user data');
-      }
+      console.log(`User registered: ${email}`);
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        faceId: user.faceId,
+        token: generateToken(user._id),
+      });
     } catch (error) {
-      console.error(`Registration error for ${email}: ${error.message}`);
+      console.error(`Registration error for ${email}: ${error.name} - ${error.message}`);
+      if (error.name === 'ResourceInUseException') {
+        res.status(400);
+        throw new Error('Face already registered for this email');
+      }
       res.status(500);
-      throw new Error('Face recognition failed');
+      throw new Error(`Face recognition failed: ${error.message}`);
     }
   }),
 ];
