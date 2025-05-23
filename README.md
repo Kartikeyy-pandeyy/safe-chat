@@ -47,6 +47,7 @@
 
 ---
 
+
 ## 🏗️ Future Plans
 ✅ **End-to-End Encryption** – Secure messages with advanced cryptography 🔒  
 ✅ **Video Chat Integration** – Add face-to-face communication 📹  
