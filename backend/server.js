@@ -205,6 +205,10 @@ io.on('connection', (socket) => {
     console.log(`User disconnected: ${socket.user.id}`);
   });
 });
+// Simple ping endpoint to keep the server alive
+app.get('/api/ping', (req, res) => {
+  res.status(200).send('OK');
+});
 
 // Error handling middleware
 app.use(notFound);
